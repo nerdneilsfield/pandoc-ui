@@ -126,20 +126,35 @@ class MainWindowUI(QObject):
                 return False
             
             loader = QUiLoader()
-            self.ui = loader.load(ui_file, self.main_window)
+            loaded_widget = loader.load(ui_file, None)  # Don't set parent initially
             ui_file.close()
             
-            if self.ui is None:
+            if loaded_widget is None:
                 logger.warning("QUiLoader returned None")
                 return False
-                
-            # Set as central widget
-            self.main_window.setCentralWidget(self.ui)
             
-            # Force refresh and repaint
-            self.ui.show()
-            self.ui.update()
-            self.ui.repaint()
+            # Extract the central widget from the loaded QMainWindow
+            if hasattr(loaded_widget, 'centralWidget') and loaded_widget.centralWidget():
+                central_content = loaded_widget.centralWidget()
+                # Set parent to prevent deletion
+                central_content.setParent(self.main_window)
+                # Remove from the loaded window and set as our central widget
+                loaded_widget.setCentralWidget(None)
+                self.main_window.setCentralWidget(central_content)
+                self.ui = loaded_widget  # Keep reference to loaded window for compatibility
+                logger.info("Extracted central widget from loaded UI")
+            else:
+                # Fallback: use the loaded widget directly (shouldn't happen with our .ui file)
+                self.main_window.setCentralWidget(loaded_widget)
+                self.ui = loaded_widget
+                logger.warning("Used loaded widget directly as central widget")
+            
+            # Force refresh and repaint of central widget
+            central_widget = self.main_window.centralWidget()
+            if central_widget:
+                central_widget.show()
+                central_widget.update()
+                central_widget.repaint()
             self.main_window.update()
             self.main_window.repaint()
             
