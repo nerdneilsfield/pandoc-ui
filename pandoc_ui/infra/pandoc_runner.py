@@ -4,10 +4,14 @@ Pandoc runner - builds and executes pandoc commands.
 
 import subprocess
 import time
+import platform
+import logging
 from pathlib import Path
 from typing import List, Optional
 
 from ..models import ConversionProfile, ConversionResult, OutputFormat
+
+logger = logging.getLogger(__name__)
 
 
 class PandocRunner:
@@ -32,7 +36,16 @@ class PandocRunner:
         Returns:
             List of command arguments for subprocess
         """
-        cmd = [str(self.pandoc_path)]
+        # Use the pandoc path as-is for subprocess.run (it handles path quoting)
+        pandoc_executable = str(self.pandoc_path)
+        
+        # On Windows, ensure we're using the correct path format
+        if platform.system().lower() == "windows":
+            # Convert to absolute path to avoid issues
+            pandoc_executable = str(self.pandoc_path.resolve())
+            logger.debug(f"Windows pandoc executable: {pandoc_executable}")
+        
+        cmd = [pandoc_executable]
         
         # Input file
         cmd.append(str(profile.input_path))
@@ -74,9 +87,20 @@ class PandocRunner:
         try:
             # Validate input file exists
             if not profile.input_path.exists():
+                error_msg = f"Input file does not exist: {profile.input_path}"
+                logger.error(error_msg)
                 return ConversionResult(
                     success=False,
-                    error_message=f"Input file does not exist: {profile.input_path}"
+                    error_message=error_msg
+                )
+            
+            # Validate pandoc executable exists
+            if not self.pandoc_path.exists():
+                error_msg = f"Pandoc executable not found: {self.pandoc_path}"
+                logger.error(error_msg)
+                return ConversionResult(
+                    success=False,
+                    error_message=error_msg
                 )
             
             # Create output directory if needed
@@ -85,19 +109,30 @@ class PandocRunner:
             
             # Build command
             cmd = self.build_command(profile)
-            cmd_str = " ".join(cmd)
+            cmd_str = " ".join(f'"{arg}"' if " " in arg else arg for arg in cmd)
+            
+            logger.info(f"Executing pandoc command: {cmd_str}")
+            logger.debug(f"Working directory: {Path.cwd()}")
+            logger.debug(f"Pandoc path exists: {self.pandoc_path.exists()}")
+            logger.debug(f"Input file exists: {profile.input_path.exists()}")
             
             # Execute pandoc
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=300  # 5 minute timeout
+                timeout=300,  # 5 minute timeout
+                cwd=None  # Use current working directory
             )
             
             duration = time.time() - start_time
             
+            logger.debug(f"Pandoc exit code: {result.returncode}")
+            logger.debug(f"Pandoc stdout: {result.stdout[:200]}...")
+            logger.debug(f"Pandoc stderr: {result.stderr[:200]}...")
+            
             if result.returncode == 0:
+                logger.info(f"Pandoc conversion successful in {duration:.2f}s")
                 return ConversionResult(
                     success=True,
                     output_path=profile.output_path,
@@ -106,6 +141,7 @@ class PandocRunner:
                 )
             else:
                 error_msg = result.stderr.strip() if result.stderr else "Unknown pandoc error"
+                logger.error(f"Pandoc conversion failed: {error_msg}")
                 return ConversionResult(
                     success=False,
                     error_message=error_msg,

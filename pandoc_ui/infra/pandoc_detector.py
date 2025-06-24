@@ -206,9 +206,13 @@ class PandocDetector:
                 logger.debug(f"File does not exist: {pandoc_path}")
                 return None
             
-            # On Windows, make sure we can execute it
-            if platform.system().lower() == "windows" and not str(pandoc_path).endswith(('.exe', '.cmd', '.bat')):
-                logger.debug(f"Windows file without executable extension: {pandoc_path}")
+            # On Windows, check for executable extensions (case insensitive)
+            if platform.system().lower() == "windows":
+                path_str = str(pandoc_path).lower()
+                if not path_str.endswith(('.exe', '.cmd', '.bat')):
+                    logger.debug(f"Windows file without executable extension: {pandoc_path}")
+                else:
+                    logger.debug(f"Windows executable file: {pandoc_path}")
             
             result = subprocess.run(
                 [str(pandoc_path), "--version"],
@@ -223,16 +227,35 @@ class PandocDetector:
             logger.debug(f"Command stderr: {result.stderr[:100]}...")
             
             if result.returncode == 0:
-                # Parse version from first line: "pandoc 3.1.8"
+                # Parse version from first line: "pandoc 3.1.8" or "pandoc.exe 3.7.0.2"
                 first_line = result.stdout.strip().split('\n')[0]
                 logger.debug(f"First line of output: {first_line}")
                 
-                if first_line.startswith("pandoc "):
-                    version = first_line.split()[1]
-                    logger.debug(f"Extracted version: {version}")
+                # Handle different pandoc executable names
+                pandoc_prefixes = ["pandoc.exe ", "pandoc.cmd ", "pandoc.bat ", "pandoc "]
+                version = None
+                
+                for prefix in pandoc_prefixes:
+                    if first_line.startswith(prefix):
+                        parts = first_line.split()
+                        if len(parts) >= 2:
+                            version = parts[1]
+                            logger.debug(f"Extracted version using prefix '{prefix}': {version}")
+                            break
+                
+                if version:
                     return version
                 else:
-                    logger.debug(f"Output doesn't start with 'pandoc ': {first_line}")
+                    logger.debug(f"Could not parse version from output: {first_line}")
+                    # Try alternative parsing - look for version pattern in the line
+                    import re
+                    version_match = re.search(r'\b(\d+\.\d+(?:\.\d+)*(?:\.\d+)?)\b', first_line)
+                    if version_match:
+                        version = version_match.group(1)
+                        logger.debug(f"Extracted version using regex: {version}")
+                        return version
+                    else:
+                        logger.debug(f"No version pattern found in: {first_line}")
             else:
                 logger.debug(f"Non-zero exit code: {result.returncode}")
             
