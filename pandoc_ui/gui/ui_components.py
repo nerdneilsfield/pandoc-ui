@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, QIODevice
 
-from ..models import ConversionProfile, ConversionResult, OutputFormat
+from ..models import ConversionProfile, ConversionResult, OutputFormat, InputFormat
 from .conversion_worker import ConversionWorker
 from ..app.task_queue import TaskQueue
 from ..app.folder_scanner import FolderScanner, ScanMode
@@ -219,14 +219,26 @@ class MainWindowUI(QObject):
         output_dir_layout.addWidget(self.browseOutputButton)
         output_layout.addLayout(output_dir_layout)
         
-        # Format selection
-        format_layout = QHBoxLayout()
-        format_layout.addWidget(QLabel("Output Format:"))
-        self.formatComboBox = QComboBox()
-        self.formatComboBox.addItems(["html", "pdf", "docx", "txt", "md"])
-        format_layout.addWidget(self.formatComboBox)
-        format_layout.addStretch()
-        output_layout.addLayout(format_layout)
+        # Input format selection
+        input_format_layout = QHBoxLayout()
+        input_format_layout.addWidget(QLabel("Input Format:"))
+        self.inputFormatComboBox = QComboBox()
+        self.inputFormatComboBox.addItem("Auto-detect", None)  # Auto-detect as default
+        for fmt in InputFormat:
+            self.inputFormatComboBox.addItem(fmt.value.upper(), fmt)
+        input_format_layout.addWidget(self.inputFormatComboBox)
+        input_format_layout.addStretch()
+        output_layout.addLayout(input_format_layout)
+        
+        # Output format selection
+        output_format_layout = QHBoxLayout()
+        output_format_layout.addWidget(QLabel("Output Format:"))
+        self.outputFormatComboBox = QComboBox()
+        for fmt in OutputFormat:
+            self.outputFormatComboBox.addItem(fmt.value.upper(), fmt)
+        output_format_layout.addWidget(self.outputFormatComboBox)
+        output_format_layout.addStretch()
+        output_layout.addLayout(output_format_layout)
         
         main_layout.addWidget(output_group)
         
@@ -674,15 +686,31 @@ class MainWindowUI(QObject):
             QMessageBox.warning(self.main_window, "Error", "Please select a valid input file")
             return
         
-        # Get output format
-        format_text = self.ui.formatComboBox.currentText().lower()
-        if format_text == "latex":
-            format_text = "latex"
+        # Get input format (may be None for auto-detect)
+        input_format_data = None
+        if hasattr(self.ui, 'inputFormatComboBox'):
+            input_format_data = self.ui.inputFormatComboBox.currentData()
+        elif hasattr(self, 'inputFormatComboBox'):
+            input_format_data = self.inputFormatComboBox.currentData()
         
-        try:
-            output_format = OutputFormat(format_text)
-        except ValueError:
-            QMessageBox.warning(self.main_window, "Error", f"Unsupported output format: {format_text}")
+        # Get output format
+        output_format_data = None
+        if hasattr(self.ui, 'outputFormatComboBox'):
+            output_format_data = self.ui.outputFormatComboBox.currentData()
+        elif hasattr(self, 'outputFormatComboBox'):
+            output_format_data = self.outputFormatComboBox.currentData()
+        elif hasattr(self.ui, 'formatComboBox'):
+            # Fallback for old combo box
+            format_text = self.ui.formatComboBox.currentText().lower()
+            if format_text == "latex":
+                format_text = "latex"
+            try:
+                output_format_data = OutputFormat(format_text)
+            except ValueError:
+                pass
+        
+        if not output_format_data:
+            QMessageBox.warning(self.main_window, "Error", "Please select a valid output format")
             return
         
         # Determine output path
@@ -690,13 +718,14 @@ class MainWindowUI(QObject):
         if not output_dir:
             output_dir = str(self.input_file_path.parent)
         
-        output_path = Path(output_dir) / f"{self.input_file_path.stem}.{output_format.value}"
+        output_path = Path(output_dir) / f"{self.input_file_path.stem}.{output_format_data.value}"
         
         # Create conversion profile
         profile = ConversionProfile(
             input_path=self.input_file_path,
             output_path=output_path,
-            output_format=output_format
+            input_format=input_format_data,
+            output_format=output_format_data
         )
         
         # Start worker thread
@@ -708,15 +737,31 @@ class MainWindowUI(QObject):
             QMessageBox.warning(self.main_window, "Error", "No files found for batch conversion. Please select a folder and check your filter settings.")
             return
         
-        # Get output format
-        format_text = self.ui.formatComboBox.currentText().lower()
-        if format_text == "latex":
-            format_text = "latex"
+        # Get input format (may be None for auto-detect)
+        input_format_data = None
+        if hasattr(self.ui, 'inputFormatComboBox'):
+            input_format_data = self.ui.inputFormatComboBox.currentData()
+        elif hasattr(self, 'inputFormatComboBox'):
+            input_format_data = self.inputFormatComboBox.currentData()
         
-        try:
-            output_format = OutputFormat(format_text)
-        except ValueError:
-            QMessageBox.warning(self.main_window, "Error", f"Unsupported output format: {format_text}")
+        # Get output format
+        output_format_data = None
+        if hasattr(self.ui, 'outputFormatComboBox'):
+            output_format_data = self.ui.outputFormatComboBox.currentData()
+        elif hasattr(self, 'outputFormatComboBox'):
+            output_format_data = self.outputFormatComboBox.currentData()
+        elif hasattr(self.ui, 'formatComboBox'):
+            # Fallback for old combo box
+            format_text = self.ui.formatComboBox.currentText().lower()
+            if format_text == "latex":
+                format_text = "latex"
+            try:
+                output_format_data = OutputFormat(format_text)
+            except ValueError:
+                pass
+        
+        if not output_format_data:
+            QMessageBox.warning(self.main_window, "Error", "Please select a valid output format")
             return
         
         # Get output directory
@@ -746,12 +791,13 @@ class MainWindowUI(QObject):
         
         # Add tasks to queue
         for i, input_file in enumerate(self.batch_files):
-            output_file = output_path / f"{input_file.stem}.{output_format.value}"
+            output_file = output_path / f"{input_file.stem}.{output_format_data.value}"
             
             profile = ConversionProfile(
                 input_path=input_file,
                 output_path=output_file,
-                output_format=output_format
+                input_format=input_format_data,
+                output_format=output_format_data
             )
             
             task_id = f"batch_{i:04d}_{input_file.name}"
@@ -778,7 +824,7 @@ class MainWindowUI(QObject):
         self.ui.statusLabel.setText("Starting conversion...")
         
         # Create and start worker
-        self.current_worker = ConversionWorker(profile, self.main_window)
+        self.current_worker = ConversionWorker(profile, service=None, parent=self.main_window)
         self.current_worker.progress_updated.connect(self.updateProgress)
         self.current_worker.status_updated.connect(self.updateStatus)
         self.current_worker.log_message.connect(self.addLogMessage)

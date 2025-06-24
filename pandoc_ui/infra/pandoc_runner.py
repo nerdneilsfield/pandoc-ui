@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 
-from ..models import ConversionProfile, ConversionResult, OutputFormat
+from ..models import ConversionProfile, ConversionResult, OutputFormat, InputFormat
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,10 @@ class PandocRunner:
             logger.debug(f"Windows pandoc executable: {pandoc_executable}")
         
         cmd = [pandoc_executable]
+        
+        # Input format (if specified)
+        if profile.input_format:
+            cmd.extend(["-f", profile.input_format.value])
         
         # Input file
         cmd.append(str(profile.input_path))

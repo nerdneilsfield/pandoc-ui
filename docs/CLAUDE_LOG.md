@@ -1,5 +1,60 @@
 # Claude Development Log
 
+## 2025-06-24-22:48 - Comprehensive Pandoc Format Support Implementation
+
+### Task
+Fix critical runtime issues and implement comprehensive pandoc format support as requested by user:
+1. Resolve worker thread error: `'PandocUIMainWindow' object has no attribute 'is_pandoc_available'`
+2. Research and implement complete pandoc input/output format support (user noted current support was "不够全面")
+3. Update UI to reflect comprehensive format capabilities
+
+### Implementation
+**Worker Thread Error Resolution:**
+- Fixed ConversionWorker instantiation in `ui_components.py:781` 
+- Changed from `ConversionWorker(profile, self.main_window)` to `ConversionWorker(profile, service=None, parent=self.main_window)`
+- Resolved parameter passing issue that caused attribute error
+
+**Comprehensive Format Research:**
+- Used `pandoc --list-input-formats` to discover 45 supported input formats
+- Used `pandoc --list-output-formats` to discover 64 supported output formats
+- Previous implementation only supported 7 output formats: HTML, PDF, DOCX, ODT, EPUB, LATEX, RTF
+- No input format selection was previously implemented
+
+**Format Support Implementation:**
+- Created comprehensive `InputFormat` enum with all 45 pandoc input formats
+- Expanded `OutputFormat` enum from 7 to 64 supported formats
+- Added `input_format` field to `ConversionProfile` dataclass
+- Updated UI with separate input and output format dropdown menus
+- Added "Auto-detect" option for input format (pandoc's default behavior)
+- Updated pandoc command generation to include `-f` input format parameter when specified
+
+### Files Modified
+- **Modified**: `pandoc_ui/models.py` - Added comprehensive InputFormat enum and expanded OutputFormat enum
+- **Modified**: `pandoc_ui/gui/ui_components.py` - Added input/output format dropdowns, updated conversion logic
+- **Modified**: `pandoc_ui/infra/pandoc_runner.py` - Updated command building to support input format specification
+
+### Technical Details
+**Format Enums Added:**
+- InputFormat: biblatex, bibtex, commonmark, creole, csv, docbook, docx, epub, gfm, html, ipynb, latex, markdown (multiple variants), mediawiki, odt, org, rst, rtf, textile, and more
+- OutputFormat: asciidoc, beamer, chunkedhtml, context, docbook (multiple variants), dzslides, epub (2/3), html (4/5), icml, jats variants, pptx, revealjs, slides formats, and more
+
+**UI Improvements:**
+- Input format dropdown with auto-detect default
+- Output format dropdown with complete pandoc support  
+- Backward compatibility maintained for existing UI files
+- Progressive fallback logic handles both new and old combo box implementations
+
+### Testing Results
+- Application starts successfully without worker thread errors
+- UI loads properly with comprehensive format dropdowns
+- Pandoc detection working correctly (version 3.1.3 detected)
+- No runtime exceptions in conversion worker instantiation
+
+### Next Steps
+The user's concerns about incomplete format support have been addressed. The application now provides access to pandoc's full format conversion capabilities with proper UI integration.
+
+# Claude Development Log
+
 ## 2024-06-24-20:45 - Phase 2 GUI MVP Implementation Complete
 
 ### Task
