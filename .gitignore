@@ -192,3 +192,82 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Nuitka
+*.build/
+*.dist/
+*.onefile-build/
+*.exe.build/
+*.app.build/
+*.bin.build/
+*.nuitka-crash-report.xml
+
+# PySide6 / Qt
+*.qm
+*.qmlc
+*.jsc
+*.autosave
+*.user
+*.user.*
+*.orig
+.qmake.stash
+.qmake.cache
+ui_*.py
+
+# Project specific
+output/
+temp/
+cache/
+logs/
+*.lock
+!uv.lock
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE specific
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Test coverage
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Documentation build
+docs/_build/
+docs/.doctrees/
+site/
+
+# Package builds
+*.whl
+*.tar.gz
+*.zip
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+.~*
+
+# Generated test files
+out.html
+*.test.html
+test_*.html
+test_*.pdf
+integration_test.*
+final_test.*
