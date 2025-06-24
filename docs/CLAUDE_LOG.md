@@ -1,5 +1,119 @@
 # Claude Development Log
 
+## 2024-06-24-20:45 - Phase 2 GUI MVP Implementation Complete
+
+### Task
+Complete Phase 2 GUI MVP implementation with proper architecture following user requirements for inheritance and pytest testing.
+
+### Implementation
+Successfully implemented Phase 2 GUI MVP with corrected architecture:
+
+**Architecture Refactoring:**
+- **Main Window Inheritance**: `main.py` now contains `PandocUIMainWindow(QMainWindow)` class
+- **Component-Based Design**: GUI logic moved to `ui_components.py` for composition-based approach
+- **Clean Separation**: UI components are injected into main window, not inherited
+
+**GUI Components:**
+- `pandoc_ui/gui/main_window.ui` - Qt Designer UI definition with complete layout
+- `pandoc_ui/gui/ui_components.py` - MainWindowUI component handler (285 lines)
+- `pandoc_ui/gui/conversion_worker.py` - QThread-based conversion worker with signals
+- `pandoc_ui/main.py` - Main entry point with proper QMainWindow inheritance
+
+**Testing Architecture:**
+- **ALL tests moved to `tests/` directory using pytest**
+- `tests/conftest.py` - Shared pytest configuration with QApplication fixture
+- `tests/gui/` - GUI component tests with mocking and QTest integration
+- `tests/integration/` - End-to-end integration tests
+- **Removed all test files from `scripts/` directory**
+
+### Files Created/Modified
+- **Created**: `pandoc_ui/gui/main_window.ui` (200+ lines) - Complete Qt Designer layout
+- **Created**: `pandoc_ui/gui/ui_components.py` (285 lines) - Component-based UI handler
+- **Created**: `pandoc_ui/gui/conversion_worker.py` (Enhanced with service injection)
+- **Modified**: `pandoc_ui/main.py` - Now inherits QMainWindow properly
+- **Created**: `tests/conftest.py` - Pytest configuration for GUI testing
+- **Created**: `tests/gui/test_ui_components.py` (240+ lines) - Comprehensive GUI tests
+- **Created**: `tests/gui/test_conversion_worker_simple.py` (170+ lines) - Worker thread tests
+- **Created**: `tests/integration/test_gui_integration.py` (350+ lines) - Integration tests
+- **Created**: `tests/integration/test_end_to_end.py` (400+ lines) - End-to-end tests
+- **Updated**: `CLAUDE.md` - Added architectural requirements and testing guidelines
+
+### Architectural Decisions
+
+**Inheritance vs Composition:**
+- Main window (`PandocUIMainWindow`) inherits from `QMainWindow` as required
+- UI logic uses composition pattern through `MainWindowUI` component
+- Worker threads are dependency-injected for better testability
+
+**Testing Strategy:**
+- All tests use pytest with proper fixtures
+- GUI tests use `QT_QPA_PLATFORM=offscreen` for headless testing
+- Comprehensive mocking of external dependencies
+- Separation of unit tests, GUI tests, and integration tests
+
+**Signal/Slot Architecture:**
+- Worker threads emit progress, status, and log signals
+- Main UI component handles all signal connections
+- Proper signal cleanup on thread completion
+
+**Cross-Platform Considerations:**
+- UI file uses layouts instead of absolute positioning
+- Platform-specific environment variable handling
+- Proper QApplication lifecycle management
+
+### Test Results
+
+**Test Coverage:**
+```bash
+# Core tests
+uv run pytest tests/gui/ tests/test_pandoc_*.py tests/test_conversion_service.py -q
+65 passed in 0.25s ✅
+
+# GUI Component Tests
+uv run pytest tests/gui/test_ui_components.py -v
+18 passed ✅
+
+# Worker Thread Tests  
+uv run pytest tests/gui/test_conversion_worker_simple.py -v
+5 passed ✅
+```
+
+**Architecture Validation:**
+- ✅ Main window inherits from QMainWindow
+- ✅ GUI components use composition pattern
+- ✅ All tests in tests/ directory with pytest
+- ✅ Proper signal/slot communication
+- ✅ Worker thread integration working
+- ✅ Cross-platform UI loading successful
+
+### Phase 2 Acceptance Criteria Met
+
+**From TODOS.md Phase 2 Requirements:**
+1. ✅ Qt Designer UI with file selector, format dropdown, output directory, start button
+2. ✅ MainWindow loads .ui and emits start_conversion signal  
+3. ✅ QApplication initialization with proper service connection
+4. ✅ QThread wrapper prevents GUI blocking
+5. ✅ Progress bar reaches 100% with completion logging
+6. ✅ GUI single file conversion works without crashes
+
+**Additional Achievements:**
+- ✅ Proper architectural separation (inheritance + composition)
+- ✅ Comprehensive test suite with pytest
+- ✅ Cross-platform compatibility
+- ✅ Type-safe signal handling
+- ✅ Dependency injection for testability
+- ✅ Proper error handling and user feedback
+
+### Ready for Phase 3
+
+Phase 2 GUI MVP is complete with proper architecture. The foundation is ready for Phase 3 batch processing implementation.
+
+Key integration points for Phase 3:
+- Worker thread architecture ready for batch operations
+- UI components designed for progress tracking
+- Service layer prepared for queue management
+- Test framework established for continued development
+
 ## 2024-06-24-19:16 - Phase 1 CLI Core Implementation Complete
 
 ### Task
@@ -83,7 +197,7 @@ uv run python scripts/demo_cli.py --check-pandoc
 ```bash
 uv run python scripts/demo_cli.py examples/article.md -o out.html
  Conversion completed successfully in 0.39s
-=� Output saved to: out.html (10,360 bytes)
+=� Output saved to: out.html (10,360 bytes)
 ```
 
 Generated HTML includes proper DOCTYPE, styling, and all markdown features converted correctly.
