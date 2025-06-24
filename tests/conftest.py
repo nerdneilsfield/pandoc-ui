@@ -3,6 +3,7 @@ Pytest configuration and fixtures for pandoc-ui tests.
 """
 
 import os
+
 import pytest
 from PySide6.QtWidgets import QApplication
 
@@ -10,7 +11,7 @@ from PySide6.QtWidgets import QApplication
 def pytest_configure(config):
     """Configure pytest for GUI testing."""
     # Set headless mode for all GUI tests
-    os.environ['QT_QPA_PLATFORM'] = 'offscreen'
+    os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
 
 @pytest.fixture(scope="session")

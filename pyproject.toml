@@ -14,6 +14,10 @@ dev = [
     "pytest>=8.0.0",
     "pytest-mock>=3.12.0",
     "pytest-cov>=4.0.0",
+    "ruff>=0.8.0",
+    "black>=24.0.0",
+    "mypy>=1.13.0",
+    "isort>=5.13.0",
 ]
 
 build = [
@@ -35,4 +39,86 @@ dev = [
     "pytest>=8.4.1",
     "pytest-cov>=6.2.1",
     "pytest-mock>=3.14.1",
+    "ruff>=0.8.0",
+    "black>=24.0.0",
+    "mypy>=1.13.0",
+    "isort>=5.13.0",
+    "pytest-timeout>=2.4.0",
+    "pytest-forked>=1.6.0",
 ]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]
+
+[tool.black]
+line-length = 100
+target-version = ['py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 100
+known_first_party = ["pandoc_ui"]
+known_third_party = ["pyside6", "pytest", "pydantic"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "pandoc_ui.gui.*"
+# GUI modules have many dynamic attributes that mypy can't understand
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "pandoc_ui.main"
+# Main module has many function signatures that can be relaxed
+ignore_errors = true

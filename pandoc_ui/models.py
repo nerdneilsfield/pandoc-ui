@@ -3,13 +3,14 @@ Data models for pandoc-ui application.
 """
 
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional, Dict, Any
 from enum import Enum
+from pathlib import Path
+from typing import Any
 
 
 class InputFormat(Enum):
     """Supported input formats for pandoc."""
+
     BIBLATEX = "biblatex"
     BIBTEX = "bibtex"
     COMMONMARK = "commonmark"
@@ -57,6 +58,7 @@ class InputFormat(Enum):
 
 class OutputFormat(Enum):
     """Supported output formats for pandoc."""
+
     ASCIIDOC = "asciidoc"
     ASCIIDOCTOR = "asciidoctor"
     BEAMER = "beamer"
@@ -126,27 +128,29 @@ class OutputFormat(Enum):
 @dataclass
 class ConversionProfile:
     """Configuration for a pandoc conversion."""
+
     input_path: Path
-    output_path: Optional[Path] = None
-    input_format: Optional[InputFormat] = None
+    output_path: Path | None = None
+    input_format: InputFormat | None = None
     output_format: OutputFormat = OutputFormat.HTML
-    options: Dict[str, Any] = None
-    
-    def __post_init__(self):
+    options: dict[str, Any] | None = None
+
+    def __post_init__(self) -> None:
         if self.options is None:
             self.options = {}
-        
+
         # Auto-generate output path if not provided
         if self.output_path is None:
             suffix = f".{self.output_format.value}"
             self.output_path = self.input_path.with_suffix(suffix)
 
 
-@dataclass 
+@dataclass
 class ConversionResult:
     """Result of a pandoc conversion operation."""
+
     success: bool
-    output_path: Optional[Path] = None
-    error_message: Optional[str] = None
+    output_path: Path | None = None
+    error_message: str | None = None
     duration_seconds: float = 0.0
-    command: Optional[str] = None
+    command: str | None = None
