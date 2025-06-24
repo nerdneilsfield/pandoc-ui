@@ -86,6 +86,16 @@ class MainWindowUI(QObject):
             # Set window properties
             self.main_window.setWindowTitle("Pandoc UI - Document Converter")
             self.main_window.resize(800, 600)
+            
+            # Force visibility and layout
+            central_widget = self.main_window.centralWidget()
+            if central_widget:
+                central_widget.setVisible(True)
+                central_widget.show()
+                if hasattr(central_widget, 'layout') and central_widget.layout():
+                    central_widget.layout().activate()
+                    central_widget.layout().update()
+            
             logger.info("Window properties set")
             
             # Verify UI components exist
@@ -99,6 +109,9 @@ class MainWindowUI(QObject):
             logger.error(f"Failed to setup UI: {str(e)}", exc_info=True)
             # Create minimal fallback UI
             self._createMinimalUI()
+            
+        # Final failsafe - ensure something is visible
+        self._ensureUIVisible()
     
     def _tryLoadUiFile(self, ui_file_path: Path) -> bool:
         """Try to load UI from .ui file."""
@@ -122,6 +135,14 @@ class MainWindowUI(QObject):
                 
             # Set as central widget
             self.main_window.setCentralWidget(self.ui)
+            
+            # Force refresh and repaint
+            self.ui.show()
+            self.ui.update()
+            self.ui.repaint()
+            self.main_window.update()
+            self.main_window.repaint()
+            
             logger.info("UI loaded successfully from .ui file")
             return True
             
@@ -135,6 +156,7 @@ class MainWindowUI(QObject):
         
         # Create central widget
         central_widget = QWidget()
+        central_widget.setMinimumSize(600, 400)
         self.main_window.setCentralWidget(central_widget)
         
         # Main layout
@@ -281,6 +303,14 @@ class MainWindowUI(QObject):
             if attr_name.endswith(('Button', 'Edit', 'ComboBox', 'CheckBox', 'SpinBox', 'TextEdit', 'Radio', 'GroupBox')):
                 setattr(self.ui, attr_name, getattr(self, attr_name))
         
+        # Force layout and visibility
+        central_widget.setVisible(True)
+        central_widget.show()
+        main_layout.activate()
+        main_layout.update()
+        central_widget.update()
+        central_widget.repaint()
+        
         logger.info("Programmatic UI created successfully")
     
     def _createMinimalUI(self):
@@ -288,10 +318,16 @@ class MainWindowUI(QObject):
         logger.info("Creating minimal fallback UI")
         
         central_widget = QWidget()
+        central_widget.setMinimumSize(600, 400)
+        central_widget.setStyleSheet("background-color: white; border: 1px solid gray;")
         self.main_window.setCentralWidget(central_widget)
         
         layout = QVBoxLayout(central_widget)
-        layout.addWidget(QLabel("Pandoc UI - Minimal Mode"))
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        title_label = QLabel("Pandoc UI - Minimal Mode")
+        title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: blue;")
+        layout.addWidget(title_label)
         
         # Basic controls
         self.inputPathEdit = QLineEdit()
@@ -324,7 +360,74 @@ class MainWindowUI(QObject):
         for attr_name in ['inputPathEdit', 'browseInputButton', 'outputDirEdit', 'browseOutputButton', 'convertButton', 'logTextEdit']:
             setattr(self.ui, attr_name, getattr(self, attr_name))
         
+        # Force visibility
+        central_widget.setVisible(True)
+        central_widget.show()
+        layout.activate()
+        layout.update()
+        central_widget.update()
+        central_widget.repaint()
+        
         logger.info("Minimal UI created")
+    
+    def _ensureUIVisible(self):
+        """Final failsafe to ensure UI is visible."""
+        try:
+            logger.info("Ensuring UI visibility as failsafe")
+            
+            central_widget = self.main_window.centralWidget()
+            if central_widget is None:
+                logger.error("No central widget found! Creating emergency UI")
+                
+                # Emergency UI creation
+                emergency_widget = QWidget()
+                emergency_widget.setStyleSheet("background-color: red; color: white;")
+                emergency_widget.setMinimumSize(400, 300)
+                
+                layout = QVBoxLayout(emergency_widget)
+                layout.addWidget(QLabel("EMERGENCY UI - Something went wrong"))
+                layout.addWidget(QLabel("Please check logs and report this issue"))
+                
+                emergency_button = QPushButton("Click me to test")
+                layout.addWidget(emergency_button)
+                
+                self.main_window.setCentralWidget(emergency_widget)
+                
+                # Create minimal ui wrapper
+                class UIWrapper:
+                    pass
+                self.ui = UIWrapper()
+                self.ui.convertButton = emergency_button
+                self.ui.logTextEdit = QTextEdit()
+                layout.addWidget(self.ui.logTextEdit)
+                
+                emergency_widget.show()
+                emergency_widget.update()
+                emergency_widget.repaint()
+                
+                logger.error("Emergency UI created and displayed")
+            else:
+                logger.info(f"Central widget exists: {type(central_widget).__name__}")
+                
+                # Force everything to be visible
+                central_widget.setVisible(True)
+                central_widget.show()
+                central_widget.raise_()
+                
+                if hasattr(central_widget, 'layout') and central_widget.layout():
+                    central_widget.layout().activate()
+                    central_widget.layout().update()
+                
+                # Force repaint
+                central_widget.update()
+                central_widget.repaint()
+                self.main_window.update()
+                self.main_window.repaint()
+                
+                logger.info("Forced UI visibility refresh completed")
+                
+        except Exception as e:
+            logger.error(f"Failed to ensure UI visibility: {str(e)}", exc_info=True)
     
     def _verifyUIComponents(self):
         """Verify required UI components exist."""
