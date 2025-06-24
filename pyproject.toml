@@ -45,6 +45,7 @@ dev = [
     "isort>=5.13.0",
     "pytest-timeout>=2.4.0",
     "pytest-forked>=1.6.0",
+    "nuitka>=2.7.10",
 ]
 
 [tool.ruff]
