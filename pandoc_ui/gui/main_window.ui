@@ -198,41 +198,6 @@
            <height>0</height>
           </size>
          </property>
-         <item>
-          <property name="text">
-           <string>HTML</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>PDF</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>DOCX</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>ODT</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>EPUB</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>LaTeX</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>RTF</string>
-          </property>
-         </item>
         </widget>
        </item>
        <item row="0" column="2">

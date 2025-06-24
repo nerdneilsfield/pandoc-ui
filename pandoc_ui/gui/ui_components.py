@@ -17,6 +17,7 @@ from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, QIODevice
 
 from ..models import ConversionProfile, ConversionResult, OutputFormat, InputFormat
+from ..infra.format_manager import FormatManager
 from .conversion_worker import ConversionWorker
 from ..app.task_queue import TaskQueue
 from ..app.folder_scanner import FolderScanner, ScanMode
@@ -47,6 +48,9 @@ class MainWindowUI(QObject):
         
         # Initialize configuration management first
         initialize_config()
+        
+        # Initialize format manager
+        self.format_manager = FormatManager()
         
         # Batch processing components
         self.task_queue: Optional[TaskQueue] = None
@@ -472,6 +476,33 @@ class MainWindowUI(QObject):
             logger.warning(f"Missing UI components: {missing}")
         else:
             logger.info("All required UI components verified")
+        
+        # Initialize formats after UI verification
+        self._initializeFormats()
+    
+    def _initializeFormats(self):
+        """Initialize format dropdown with comprehensive format support."""
+        try:
+            # Clear existing items if any
+            if hasattr(self.ui, 'formatComboBox'):
+                self.ui.formatComboBox.clear()
+                
+                # Add output formats from format manager
+                output_formats = self.format_manager.get_output_formats()
+                for format_key, display_name in output_formats:
+                    self.ui.formatComboBox.addItem(display_name, format_key)
+                
+                # Set default to HTML if available
+                html_index = self.ui.formatComboBox.findData('html')
+                if html_index >= 0:
+                    self.ui.formatComboBox.setCurrentIndex(html_index)
+                
+                logger.info(f"Initialized format dropdown with {len(output_formats)} formats")
+            else:
+                logger.warning("formatComboBox not found, skipping format initialization")
+                
+        except Exception as e:
+            logger.error(f"Failed to initialize formats: {e}")
     
     def connectSignals(self):
         """Connect UI signals to slots."""
@@ -537,14 +568,10 @@ class MainWindowUI(QObject):
         file_dialog = QFileDialog(self.main_window)
         file_dialog.setWindowTitle("Select Input File")
         file_dialog.setFileMode(QFileDialog.ExistingFile)
-        file_dialog.setNameFilters([
-            "Markdown files (*.md *.markdown)",
-            "Text files (*.txt)",
-            "ReStructuredText (*.rst)",
-            "HTML files (*.html *.htm)",
-            "Word documents (*.docx)",
-            "All files (*.*)"
-        ])
+        
+        # Get comprehensive file filters from format manager
+        file_filters = self.format_manager.get_file_filters()
+        file_dialog.setNameFilters(file_filters)
         
         if file_dialog.exec():
             selected_files = file_dialog.selectedFiles()
@@ -686,31 +713,32 @@ class MainWindowUI(QObject):
             QMessageBox.warning(self.main_window, "Error", "Please select a valid input file")
             return
         
-        # Get input format (may be None for auto-detect)
-        input_format_data = None
-        if hasattr(self.ui, 'inputFormatComboBox'):
-            input_format_data = self.ui.inputFormatComboBox.currentData()
-        elif hasattr(self, 'inputFormatComboBox'):
-            input_format_data = self.inputFormatComboBox.currentData()
+        # Auto-detect input format from file extension
+        input_format_str = self.format_manager.detect_format_from_extension(str(self.input_file_path))
+        try:
+            input_format_data = InputFormat(input_format_str) if input_format_str else None
+        except ValueError:
+            input_format_data = None
         
-        # Get output format
-        output_format_data = None
-        if hasattr(self.ui, 'outputFormatComboBox'):
-            output_format_data = self.ui.outputFormatComboBox.currentData()
-        elif hasattr(self, 'outputFormatComboBox'):
-            output_format_data = self.outputFormatComboBox.currentData()
-        elif hasattr(self.ui, 'formatComboBox'):
-            # Fallback for old combo box
-            format_text = self.ui.formatComboBox.currentText().lower()
-            if format_text == "latex":
-                format_text = "latex"
-            try:
-                output_format_data = OutputFormat(format_text)
-            except ValueError:
-                pass
+        # Get output format from combo box
+        output_format_str = None
+        if hasattr(self.ui, 'formatComboBox'):
+            output_format_str = self.ui.formatComboBox.currentData()
         
-        if not output_format_data:
+        if not output_format_str:
             QMessageBox.warning(self.main_window, "Error", "Please select a valid output format")
+            return
+            
+        # Verify format compatibility
+        if input_format_str and not self.format_manager.can_convert(input_format_str, output_format_str):
+            QMessageBox.warning(self.main_window, "Format Compatibility Error", 
+                              f"Cannot convert from {input_format_str} to {output_format_str}")
+            return
+        
+        try:
+            output_format_data = OutputFormat(output_format_str)
+        except ValueError:
+            QMessageBox.warning(self.main_window, "Error", f"Unsupported output format: {output_format_str}")
             return
         
         # Determine output path
@@ -737,31 +765,19 @@ class MainWindowUI(QObject):
             QMessageBox.warning(self.main_window, "Error", "No files found for batch conversion. Please select a folder and check your filter settings.")
             return
         
-        # Get input format (may be None for auto-detect)
-        input_format_data = None
-        if hasattr(self.ui, 'inputFormatComboBox'):
-            input_format_data = self.ui.inputFormatComboBox.currentData()
-        elif hasattr(self, 'inputFormatComboBox'):
-            input_format_data = self.inputFormatComboBox.currentData()
+        # Get output format from combo box
+        output_format_str = None
+        if hasattr(self.ui, 'formatComboBox'):
+            output_format_str = self.ui.formatComboBox.currentData()
         
-        # Get output format
-        output_format_data = None
-        if hasattr(self.ui, 'outputFormatComboBox'):
-            output_format_data = self.ui.outputFormatComboBox.currentData()
-        elif hasattr(self, 'outputFormatComboBox'):
-            output_format_data = self.outputFormatComboBox.currentData()
-        elif hasattr(self.ui, 'formatComboBox'):
-            # Fallback for old combo box
-            format_text = self.ui.formatComboBox.currentText().lower()
-            if format_text == "latex":
-                format_text = "latex"
-            try:
-                output_format_data = OutputFormat(format_text)
-            except ValueError:
-                pass
-        
-        if not output_format_data:
+        if not output_format_str:
             QMessageBox.warning(self.main_window, "Error", "Please select a valid output format")
+            return
+        
+        try:
+            output_format_data = OutputFormat(output_format_str)
+        except ValueError:
+            QMessageBox.warning(self.main_window, "Error", f"Unsupported output format: {output_format_str}")
             return
         
         # Get output directory
@@ -792,6 +808,18 @@ class MainWindowUI(QObject):
         # Add tasks to queue
         for i, input_file in enumerate(self.batch_files):
             output_file = output_path / f"{input_file.stem}.{output_format_data.value}"
+            
+            # Auto-detect input format for each file
+            input_format_str = self.format_manager.detect_format_from_extension(str(input_file))
+            try:
+                input_format_data = InputFormat(input_format_str) if input_format_str else None
+            except ValueError:
+                input_format_data = None
+            
+            # Check format compatibility
+            if input_format_str and not self.format_manager.can_convert(input_format_str, output_format_str):
+                self.addLogMessage(f"⚠️ Skipping {input_file.name}: Cannot convert from {input_format_str} to {output_format_str}")
+                continue
             
             profile = ConversionProfile(
                 input_path=input_file,
