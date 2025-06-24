@@ -3,6 +3,7 @@ Main entry point for pandoc-ui GUI application.
 """
 
 import sys
+import os
 import logging
 from pathlib import Path
 
@@ -47,15 +48,27 @@ def main():
     setup_logging()
     logger = logging.getLogger(__name__)
     
+    # Force Qt platform plugin for WSL compatibility
+    if not os.environ.get('QT_QPA_PLATFORM'):
+        # Check for WSL environment
+        is_wsl = (
+            os.environ.get('WSL_DISTRO_NAME') or 
+            os.environ.get('WSL_INTEROP') or
+            'microsoft' in os.uname().release.lower() if hasattr(os, 'uname') else False
+        )
+        if is_wsl:
+            os.environ['QT_QPA_PLATFORM'] = 'xcb'
+            logger.info("WSL detected, setting Qt platform to xcb")
+    
     # Create application
     app = QApplication(sys.argv)
     app.setApplicationName("Pandoc UI")
     app.setApplicationVersion("0.1.0")
     app.setOrganizationName("pandoc-ui")
     
-    # Enable high DPI scaling
-    app.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-    app.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+    # High DPI scaling is enabled by default in Qt 6
+    # The AA_EnableHighDpiScaling and AA_UseHighDpiPixmaps attributes are deprecated in Qt 6
+    logger.info("High DPI scaling enabled by default in Qt 6")
     
     try:
         # Create and show main window

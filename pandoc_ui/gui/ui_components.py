@@ -9,7 +9,9 @@ from typing import Optional
 
 from PySide6.QtCore import QTimer, Signal, Slot, QObject
 from PySide6.QtWidgets import (
-    QFileDialog, QMessageBox, QApplication
+    QFileDialog, QMessageBox, QApplication, QWidget, QVBoxLayout, 
+    QHBoxLayout, QGroupBox, QRadioButton, QLineEdit, QPushButton,
+    QComboBox, QTextEdit, QLabel, QSpinBox, QCheckBox
 )
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QFile, QIODevice
@@ -20,6 +22,7 @@ from ..app.task_queue import TaskQueue
 from ..app.folder_scanner import FolderScanner, ScanMode
 from ..app.profile_repository import ProfileRepository, UIProfile
 from ..infra.settings_store import SettingsStore, Language
+from ..infra.config_manager import initialize_config
 
 
 logger = logging.getLogger(__name__)
@@ -41,6 +44,9 @@ class MainWindowUI(QObject):
         self.input_file_path: Optional[Path] = None
         self.input_folder_path: Optional[Path] = None
         self.is_batch_mode: bool = False
+        
+        # Initialize configuration management first
+        initialize_config()
         
         # Batch processing components
         self.task_queue: Optional[TaskQueue] = None
@@ -66,61 +72,327 @@ class MainWindowUI(QObject):
         QTimer.singleShot(100, self.checkPandocAvailability)
     
     def setupUi(self):
-        """Load and setup UI from .ui file."""
-        # Load UI file
-        ui_file_path = Path(__file__).parent / "main_window.ui"
-        ui_file = QFile(str(ui_file_path))
+        """Load and setup UI from .ui file or create programmatically."""
+        try:
+            # Try to load UI file first
+            ui_file_path = Path(__file__).parent / "main_window.ui"
+            logger.info(f"Attempting to load UI file from: {ui_file_path}")
+            
+            success = self._tryLoadUiFile(ui_file_path)
+            if not success:
+                logger.warning("UI file loading failed, creating programmatic UI")
+                self._createProgrammaticUI()
+            
+            # Set window properties
+            self.main_window.setWindowTitle("Pandoc UI - Document Converter")
+            self.main_window.resize(800, 600)
+            logger.info("Window properties set")
+            
+            # Verify UI components exist
+            self._verifyUIComponents()
+            
+            # Initialize profile management UI
+            self.initializeProfileUI()
+            logger.info("Profile UI initialized")
+            
+        except Exception as e:
+            logger.error(f"Failed to setup UI: {str(e)}", exc_info=True)
+            # Create minimal fallback UI
+            self._createMinimalUI()
+    
+    def _tryLoadUiFile(self, ui_file_path: Path) -> bool:
+        """Try to load UI from .ui file."""
+        try:
+            if not ui_file_path.exists():
+                logger.warning(f"UI file not found: {ui_file_path}")
+                return False
+            
+            ui_file = QFile(str(ui_file_path))
+            if not ui_file.open(QIODevice.ReadOnly):
+                logger.warning(f"Cannot open UI file: {ui_file_path}")
+                return False
+            
+            loader = QUiLoader()
+            self.ui = loader.load(ui_file, self.main_window)
+            ui_file.close()
+            
+            if self.ui is None:
+                logger.warning("QUiLoader returned None")
+                return False
+                
+            # Set as central widget
+            self.main_window.setCentralWidget(self.ui)
+            logger.info("UI loaded successfully from .ui file")
+            return True
+            
+        except Exception as e:
+            logger.warning(f"Failed to load UI file: {str(e)}")
+            return False
+    
+    def _createProgrammaticUI(self):
+        """Create UI programmatically as fallback."""
+        logger.info("Creating programmatic UI")
         
-        if not ui_file.open(QIODevice.ReadOnly):
-            raise RuntimeError(f"Cannot open UI file: {ui_file_path}")
+        # Create central widget
+        central_widget = QWidget()
+        self.main_window.setCentralWidget(central_widget)
         
-        loader = QUiLoader()
-        self.ui = loader.load(ui_file, self.main_window)
-        ui_file.close()
+        # Main layout
+        main_layout = QVBoxLayout(central_widget)
+        main_layout.setSpacing(12)
+        main_layout.setContentsMargins(20, 20, 20, 20)
         
-        # Set as central widget
-        self.main_window.setCentralWidget(self.ui)
+        # Input Selection Group
+        input_group = QGroupBox("Input Selection")
+        input_layout = QVBoxLayout(input_group)
         
-        # Set window properties
-        self.main_window.setWindowTitle("Pandoc UI - Document Converter")
-        self.main_window.resize(800, 600)
+        # Mode selection
+        mode_layout = QHBoxLayout()
+        self.singleFileModeRadio = QRadioButton("Single File")
+        self.singleFileModeRadio.setChecked(True)
+        self.folderModeRadio = QRadioButton("Folder (Batch)")
+        mode_layout.addWidget(self.singleFileModeRadio)
+        mode_layout.addWidget(self.folderModeRadio)
+        mode_layout.addStretch()
+        input_layout.addLayout(mode_layout)
         
-        # Initialize profile management UI
-        self.initializeProfileUI()
+        # Input path
+        input_path_layout = QHBoxLayout()
+        input_path_layout.addWidget(QLabel("Input:"))
+        self.inputPathEdit = QLineEdit()
+        self.inputPathEdit.setPlaceholderText("Select input file or folder...")
+        self.browseInputButton = QPushButton("Browse...")
+        input_path_layout.addWidget(self.inputPathEdit)
+        input_path_layout.addWidget(self.browseInputButton)
+        input_layout.addLayout(input_path_layout)
+        
+        main_layout.addWidget(input_group)
+        
+        # Output Selection Group
+        output_group = QGroupBox("Output Configuration")
+        output_layout = QVBoxLayout(output_group)
+        
+        # Output directory
+        output_dir_layout = QHBoxLayout()
+        output_dir_layout.addWidget(QLabel("Output Directory:"))
+        self.outputDirEdit = QLineEdit()
+        self.outputDirEdit.setPlaceholderText("Select output directory...")
+        self.browseOutputButton = QPushButton("Browse...")
+        output_dir_layout.addWidget(self.outputDirEdit)
+        output_dir_layout.addWidget(self.browseOutputButton)
+        output_layout.addLayout(output_dir_layout)
+        
+        # Format selection
+        format_layout = QHBoxLayout()
+        format_layout.addWidget(QLabel("Output Format:"))
+        self.formatComboBox = QComboBox()
+        self.formatComboBox.addItems(["html", "pdf", "docx", "txt", "md"])
+        format_layout.addWidget(self.formatComboBox)
+        format_layout.addStretch()
+        output_layout.addLayout(format_layout)
+        
+        main_layout.addWidget(output_group)
+        
+        # Batch Options Group (initially hidden)
+        self.batchOptionsGroupBox = QGroupBox("Batch Options")
+        batch_layout = QVBoxLayout(self.batchOptionsGroupBox)
+        
+        # Extension filter
+        ext_layout = QHBoxLayout()
+        ext_layout.addWidget(QLabel("Extensions:"))
+        self.extensionFilterEdit = QLineEdit()
+        self.extensionFilterEdit.setText(".md,.txt,.rst")
+        ext_layout.addWidget(self.extensionFilterEdit)
+        batch_layout.addLayout(ext_layout)
+        
+        # Max files
+        max_files_layout = QHBoxLayout()
+        max_files_layout.addWidget(QLabel("Max Files:"))
+        self.maxFilesSpinBox = QSpinBox()
+        self.maxFilesSpinBox.setRange(1, 10000)
+        self.maxFilesSpinBox.setValue(1000)
+        max_files_layout.addWidget(self.maxFilesSpinBox)
+        max_files_layout.addStretch()
+        batch_layout.addLayout(max_files_layout)
+        
+        # Recursive option
+        self.recursiveCheckBox = QCheckBox("Scan subdirectories recursively")
+        self.recursiveCheckBox.setChecked(True)
+        batch_layout.addWidget(self.recursiveCheckBox)
+        
+        self.batchOptionsGroupBox.setVisible(False)
+        main_layout.addWidget(self.batchOptionsGroupBox)
+        
+        # Convert button
+        self.convertButton = QPushButton("Convert")
+        self.convertButton.setMinimumHeight(40)
+        main_layout.addWidget(self.convertButton)
+        
+        # Log area
+        log_group = QGroupBox("Conversion Log")
+        log_layout = QVBoxLayout(log_group)
+        
+        log_buttons_layout = QHBoxLayout()
+        self.clearLogButton = QPushButton("Clear Log")
+        log_buttons_layout.addWidget(self.clearLogButton)
+        log_buttons_layout.addStretch()
+        log_layout.addLayout(log_buttons_layout)
+        
+        self.logTextEdit = QTextEdit()
+        self.logTextEdit.setMaximumHeight(150)
+        log_layout.addWidget(self.logTextEdit)
+        
+        main_layout.addWidget(log_group)
+        
+        # Profile management (simplified)
+        profile_group = QGroupBox("Configuration Profiles")
+        profile_layout = QHBoxLayout(profile_group)
+        
+        profile_layout.addWidget(QLabel("Profile:"))
+        self.profileComboBox = QComboBox()
+        self.saveProfileButton = QPushButton("Save")
+        self.loadProfileButton = QPushButton("Load")
+        self.deleteProfileButton = QPushButton("Delete")
+        
+        profile_layout.addWidget(self.profileComboBox)
+        profile_layout.addWidget(self.saveProfileButton)
+        profile_layout.addWidget(self.loadProfileButton)
+        profile_layout.addWidget(self.deleteProfileButton)
+        profile_layout.addStretch()
+        
+        main_layout.addWidget(profile_group)
+        
+        # Language selector
+        lang_layout = QHBoxLayout()
+        lang_layout.addStretch()
+        lang_layout.addWidget(QLabel("Language:"))
+        self.languageComboBox = QComboBox()
+        self.languageComboBox.addItems(["English", "中文", "日本語", "한국어", "Français", "Deutsch", "Español"])
+        lang_layout.addWidget(self.languageComboBox)
+        main_layout.addLayout(lang_layout)
+        
+        # Create ui object to match expected structure
+        class UIWrapper:
+            pass
+        
+        self.ui = UIWrapper()
+        # Copy all widgets to ui object for compatibility
+        for attr_name in dir(self):
+            if attr_name.endswith(('Button', 'Edit', 'ComboBox', 'CheckBox', 'SpinBox', 'TextEdit', 'Radio', 'GroupBox')):
+                setattr(self.ui, attr_name, getattr(self, attr_name))
+        
+        logger.info("Programmatic UI created successfully")
+    
+    def _createMinimalUI(self):
+        """Create minimal UI as last resort."""
+        logger.info("Creating minimal fallback UI")
+        
+        central_widget = QWidget()
+        self.main_window.setCentralWidget(central_widget)
+        
+        layout = QVBoxLayout(central_widget)
+        layout.addWidget(QLabel("Pandoc UI - Minimal Mode"))
+        
+        # Basic controls
+        self.inputPathEdit = QLineEdit()
+        self.browseInputButton = QPushButton("Browse Input")
+        self.outputDirEdit = QLineEdit() 
+        self.browseOutputButton = QPushButton("Browse Output")
+        self.convertButton = QPushButton("Convert")
+        self.logTextEdit = QTextEdit()
+        
+        layout.addWidget(QLabel("Input:"))
+        input_layout = QHBoxLayout()
+        input_layout.addWidget(self.inputPathEdit)
+        input_layout.addWidget(self.browseInputButton)
+        layout.addLayout(input_layout)
+        
+        layout.addWidget(QLabel("Output Directory:"))
+        output_layout = QHBoxLayout()
+        output_layout.addWidget(self.outputDirEdit)
+        output_layout.addWidget(self.browseOutputButton)
+        layout.addLayout(output_layout)
+        
+        layout.addWidget(self.convertButton)
+        layout.addWidget(QLabel("Log:"))
+        layout.addWidget(self.logTextEdit)
+        
+        # Create minimal ui object
+        class UIWrapper:
+            pass
+        self.ui = UIWrapper()
+        for attr_name in ['inputPathEdit', 'browseInputButton', 'outputDirEdit', 'browseOutputButton', 'convertButton', 'logTextEdit']:
+            setattr(self.ui, attr_name, getattr(self, attr_name))
+        
+        logger.info("Minimal UI created")
+    
+    def _verifyUIComponents(self):
+        """Verify required UI components exist."""
+        required_components = [
+            'inputPathEdit', 'browseInputButton', 'outputDirEdit', 
+            'browseOutputButton', 'convertButton', 'logTextEdit'
+        ]
+        
+        missing = []
+        for component in required_components:
+            if not hasattr(self.ui, component):
+                missing.append(component)
+        
+        if missing:
+            logger.warning(f"Missing UI components: {missing}")
+        else:
+            logger.info("All required UI components verified")
     
     def connectSignals(self):
         """Connect UI signals to slots."""
-        # File browsing
-        self.ui.browseInputButton.clicked.connect(self.browseInput)
-        self.ui.browseOutputButton.clicked.connect(self.browseOutputDirectory)
-        
-        # Mode switching
-        self.ui.singleFileModeRadio.toggled.connect(self.onModeChanged)
-        self.ui.folderModeRadio.toggled.connect(self.onModeChanged)
-        
-        # Conversion
-        self.ui.convertButton.clicked.connect(self.startConversion)
-        
-        # UI updates
-        self.ui.inputPathEdit.textChanged.connect(self.updateConvertButtonState)
-        self.ui.formatComboBox.currentTextChanged.connect(self.onFormatChanged)
-        self.ui.extensionFilterEdit.textChanged.connect(self.onExtensionFilterChanged)
-        
-        # Log management
-        self.ui.clearLogButton.clicked.connect(self.clearLog)
-        
-        # Menu actions
-        self.ui.actionExit.triggered.connect(self.main_window.close)
-        self.ui.actionAbout.triggered.connect(self.showAbout)
-        
-        # Profile management
-        self.ui.saveProfileButton.clicked.connect(self.saveProfile)
-        self.ui.loadProfileButton.clicked.connect(self.loadProfile)
-        self.ui.deleteProfileButton.clicked.connect(self.deleteProfile)
-        self.ui.profileComboBox.currentTextChanged.connect(self.onProfileSelected)
-        
-        # Language switching
-        self.ui.languageComboBox.currentTextChanged.connect(self.onLanguageChanged)
+        try:
+            # File browsing (required)
+            self.ui.browseInputButton.clicked.connect(self.browseInput)
+            self.ui.browseOutputButton.clicked.connect(self.browseOutputDirectory)
+            
+            # Conversion (required)
+            self.ui.convertButton.clicked.connect(self.startConversion)
+            
+            # UI updates (required)
+            self.ui.inputPathEdit.textChanged.connect(self.updateConvertButtonState)
+            
+            # Mode switching (optional)
+            if hasattr(self.ui, 'singleFileModeRadio'):
+                self.ui.singleFileModeRadio.toggled.connect(self.onModeChanged)
+            if hasattr(self.ui, 'folderModeRadio'):
+                self.ui.folderModeRadio.toggled.connect(self.onModeChanged)
+            
+            # Optional components
+            if hasattr(self.ui, 'formatComboBox'):
+                self.ui.formatComboBox.currentTextChanged.connect(self.onFormatChanged)
+            if hasattr(self.ui, 'extensionFilterEdit'):
+                self.ui.extensionFilterEdit.textChanged.connect(self.onExtensionFilterChanged)
+            if hasattr(self.ui, 'clearLogButton'):
+                self.ui.clearLogButton.clicked.connect(self.clearLog)
+            
+            # Menu actions (optional)
+            if hasattr(self.ui, 'actionExit'):
+                self.ui.actionExit.triggered.connect(self.main_window.close)
+            if hasattr(self.ui, 'actionAbout'):
+                self.ui.actionAbout.triggered.connect(self.showAbout)
+            
+            # Profile management (optional)
+            if hasattr(self.ui, 'saveProfileButton'):
+                self.ui.saveProfileButton.clicked.connect(self.saveProfile)
+            if hasattr(self.ui, 'loadProfileButton'):
+                self.ui.loadProfileButton.clicked.connect(self.loadProfile)
+            if hasattr(self.ui, 'deleteProfileButton'):
+                self.ui.deleteProfileButton.clicked.connect(self.deleteProfile)
+            if hasattr(self.ui, 'profileComboBox'):
+                self.ui.profileComboBox.currentTextChanged.connect(self.onProfileSelected)
+            
+            # Language switching (optional)
+            if hasattr(self.ui, 'languageComboBox'):
+                self.ui.languageComboBox.currentTextChanged.connect(self.onLanguageChanged)
+                
+            logger.info("UI signals connected successfully")
+        except Exception as e:
+            logger.error(f"Failed to connect signals: {str(e)}", exc_info=True)
     
     @Slot()
     def browseInput(self):
