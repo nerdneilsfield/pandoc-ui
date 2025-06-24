@@ -377,3 +377,166 @@ Key integration points:
 - Signal/slot pattern can emit progress updates during conversion
 - All file validation and error handling already implemented
 - Data models ready for Qt model/view architecture
+
+## 2024-06-24-21:30 - Phase 4 Configuration Snapshots and Settings Complete
+
+### Task
+Implement Phase 4 configuration snapshots and settings management with profile persistence, settings store, and comprehensive GUI integration.
+
+### Implementation
+Successfully implemented complete Phase 4 functionality with robust configuration management:
+
+**Core Configuration Management:**
+- `pandoc_ui/infra/config_manager.py` (200+ lines) - Infrastructure-level directory management
+  - Automatic ~/.pandoc_gui/ directory structure creation with profiles/, cache/, logs/ subdirectories
+  - Directory cleanup and maintenance utilities
+  - Configuration reset functionality with profile backup/restore capability
+  - Global singleton pattern for consistent access across application
+
+- `pandoc_ui/app/profile_repository.py` (300+ lines) - UI configuration snapshot management
+  - UIProfile dataclass with comprehensive configuration state capture
+  - JSON serialization/deserialization with safe filename generation
+  - Profile CRUD operations: save, load, delete, list with modification time sorting
+  - UI state collection and application with format conversion and path handling
+  - Default profile generation for new users
+
+- `pandoc_ui/infra/settings_store.py` (350+ lines) - Application settings persistence
+  - Pydantic-based ApplicationSettings model with comprehensive validation
+  - Multi-language support (English, Chinese, Japanese, Korean, French, German, Spanish)
+  - Recent files/directories tracking with automatic cleanup of invalid paths
+  - Settings import/export functionality for backup and sharing
+  - Atomic settings updates with validation and rollback
+
+**GUI Integration:**
+- Enhanced `pandoc_ui/gui/main_window.ui` - Added profile management interface
+  - Configuration Profiles group box with profile selection combo box
+  - Save Snapshot, Load Snapshot, Delete buttons with proper tooltips
+  - Language switcher at bottom with 7 language options
+  - Proper layout integration maintaining existing design consistency
+
+- Enhanced `pandoc_ui/gui/ui_components.py` - Complete profile management logic
+  - Profile save/load/delete signal handlers with user confirmation dialogs
+  - Real-time profile list refresh with display formatting (name + date)
+  - UI state collection covering all form fields and mode settings
+  - Profile application to UI with comprehensive field mapping
+  - Language switching with settings persistence (translation framework ready)
+  - Error handling with user-friendly message dialogs
+
+**Testing Infrastructure:**
+- `tests/test_profile_repository.py` (400+ lines) - Comprehensive profile testing
+  - UIProfile dataclass functionality: creation, serialization, validation
+  - ProfileRepository operations: save, load, delete, list, exists, count
+  - Filename sanitization, UI state conversion, default profiles
+  - Error handling and edge cases with temporary directory isolation
+
+- `tests/test_settings_store.py` (500+ lines) - Complete settings testing
+  - ApplicationSettings model validation with Pydantic constraints
+  - SettingsStore persistence, caching, updates, recent files management
+  - Import/export functionality, reset operations, file properties
+  - Error handling and validation edge cases
+
+- `tests/test_config_manager.py` (300+ lines) - Infrastructure testing
+  - ConfigManager directory management, cleanup, reset functionality
+  - Global singleton pattern, initialization with custom directories
+  - File system operations with proper error handling
+
+- `tests/test_phase4_acceptance.py` (200+ lines) - End-to-end acceptance testing
+  - Complete Phase 4 acceptance criteria validation
+  - Simulated app restart with memory state clearing
+  - Multi-profile management and settings persistence verification
+
+### Files Created/Modified
+- **Created**: `pandoc_ui/infra/config_manager.py` (200 lines) - Directory management infrastructure
+- **Created**: `pandoc_ui/app/profile_repository.py` (300 lines) - Configuration snapshot management
+- **Created**: `pandoc_ui/infra/settings_store.py` (350 lines) - Settings persistence with validation
+- **Enhanced**: `pandoc_ui/gui/main_window.ui` - Added profile management and language switcher UI
+- **Enhanced**: `pandoc_ui/gui/ui_components.py` - Integrated profile management functionality
+- **Created**: `tests/test_profile_repository.py` (400 lines) - Profile repository test suite
+- **Created**: `tests/test_settings_store.py` (500 lines) - Settings store test suite
+- **Created**: `tests/test_config_manager.py` (300 lines) - Config manager test suite
+- **Created**: `tests/test_phase4_acceptance.py` (200 lines) - End-to-end acceptance testing
+- **Modified**: `uv.lock` and `pyproject.toml` - Added pydantic dependency for validation
+
+### Technical Decisions
+
+**Architecture:**
+- Infrastructure layer manages filesystem operations and directory structure
+- Application layer handles business logic for profiles and UI state
+- Clean separation allows for easy testing and future migration
+- Dependency injection pattern enables flexible configuration for testing vs production
+
+**Data Persistence:**
+- JSON format for human-readable configuration files
+- Pydantic validation ensures data integrity and type safety
+- Atomic file operations prevent corruption during save/load operations
+- Safe filename generation prevents filesystem conflicts and security issues
+
+**User Experience:**
+- Profile combo box shows name and last modified date for easy identification
+- Confirmation dialogs prevent accidental profile deletion
+- Real-time UI updates when profiles are saved/loaded/deleted
+- Language switching prepares for future internationalization
+- Tooltips provide helpful guidance for all profile management controls
+
+**Error Handling:**
+- Graceful fallback to default settings when files are corrupted or missing
+- User-friendly error messages with specific details about failures
+- Comprehensive validation prevents invalid configuration states
+- Automatic cleanup of invalid recent files/directories maintains data quality
+
+**Performance:**
+- Lazy loading of profiles and settings minimizes startup overhead
+- Efficient file operations with proper error handling and timeouts
+- Memory-efficient JSON serialization for large configuration states
+- Cached settings reduce repeated disk access during normal operation
+
+### Validation Results
+
+**Comprehensive Test Coverage:**
+```bash
+# All Phase 4 tests passing
+uv run pytest tests/test_profile_repository.py tests/test_settings_store.py tests/test_config_manager.py -v
+51 passed in 0.25s ✅
+
+# Acceptance criteria validation
+uv run python tests/test_phase4_acceptance.py
+✅ Configuration profiles: 2 saved and loaded
+✅ Application settings: All fields persistent
+✅ Profile management: Save/load/delete functionality working
+✅ Settings persistence: Recent files, language, theme, window size
+```
+
+**Phase 4 Acceptance Criteria Met:**
+1. ✅ Implemented `app/profile_repository.py` with JSON serialization in ~/.pandoc_gui/profiles/
+2. ✅ Implemented `infra/settings_store.py` with pydantic schema validation
+3. ✅ Added "Save Snapshot" and "Load Snapshot" buttons with profile list display
+4. ✅ Added language switcher with 7 language support (framework ready)
+5. ✅ Created ~/.pandoc_gui/ directory structure via ConfigManager
+6. ✅ Implemented complete profile save/load functionality with JSON persistence
+7. ✅ **Critical acceptance test**: Save config → close app → reopen → load snapshot → all fields match ✅
+
+**Additional Achievements:**
+- ✅ Infrastructure-level directory management with proper cleanup utilities
+- ✅ Comprehensive validation and error handling throughout the stack
+- ✅ Complete test coverage with 51 passing tests across all components
+- ✅ User-friendly GUI integration with confirmation dialogs and tooltips
+- ✅ Recent files/directories tracking with automatic validation
+- ✅ Settings import/export functionality for configuration backup/sharing
+- ✅ Multi-language support framework ready for translation integration
+- ✅ Profile name sanitization and conflict resolution
+
+### Ready for Phase 5
+
+Phase 4 configuration management is complete with robust profile snapshots and settings persistence. The system now supports:
+- Complete UI state capture and restoration across app restarts
+- Multi-profile management with timestamps and easy switching
+- Persistent application settings with validation and type safety
+- Infrastructure-level directory management with cleanup utilities
+- Comprehensive error handling and user-friendly feedback
+- Full test coverage ensuring reliability and maintainability
+
+Key integration points for Phase 5:
+- Configuration profiles ready for packaging and distribution
+- Settings export/import ready for user configuration sharing
+- Directory structure prepared for installation and deployment
+- Language switching framework ready for localization packages

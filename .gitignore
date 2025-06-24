@@ -212,7 +212,7 @@ cython_debug/
 *.orig
 .qmake.stash
 .qmake.cache
-ui_*.py
+# ui_*.py  # Commented out to allow hand-written ui_components.py
 
 # Project specific
 output/

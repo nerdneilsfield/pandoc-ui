@@ -86,12 +86,3 @@
 3. 你应更新 `CHANGELOG.md` 并添加 v1.0 发行笔记，列出主要功能、依赖与已知问题。
 4. CI 中应增加 `uv pip audit` 步骤，自动检查依赖 CVE；同时拉取 `flake8`、`black`、`mypy` 质量门禁。
 5. 阶段验收指标：GitHub README 显示构建通过徽章、文档截图、用户下载跳转链接全部可点击。
-
----
-
-🎯 **完成后 /save 节点**
-
-* 建议在 Phase 1 完成 CLI 核心后立即 **/save**，再在 Phase 5 打包通过后再次 **/save**，这样能固化 API 与发布流水线。
-
-❓ **下一步**
-以上 TODO 是否满足你的 uv-驱动开发流程？或者你想让我再提供 Phase 1 的 `pyproject.toml` 与 uv 命令示例？
