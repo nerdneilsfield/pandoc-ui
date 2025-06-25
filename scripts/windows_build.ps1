@@ -1,10 +1,23 @@
 # Windows build script using Nuitka via uv
-# Builds pandoc-ui into a single executable file for Windows distribution
+# Builds pandoc-ui into executable for Windows distribution
 # For Linux and macOS, use scripts/build.sh
+#
+# Usage:
+#   .\scripts\windows_build.ps1                 # Build as single file (onefile)
+#   .\scripts\windows_build.ps1 -Standalone     # Build as standalone directory
+#   .\scripts\windows_build.ps1 -EnableConsole  # Build with console window enabled
+
+param(
+    [switch]$Standalone,    # Build as standalone directory instead of single file
+    [switch]$EnableConsole  # Enable console window for debugging
+)
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "🪟 Building pandoc-ui for Windows..." -ForegroundColor Yellow
+$BuildMode = if ($Standalone) { "standalone directory" } else { "single file" }
+$ConsoleMode = if ($EnableConsole) { "with console" } else { "GUI only" }
+
+Write-Host "🪟 Building pandoc-ui for Windows ($BuildMode, $ConsoleMode)..." -ForegroundColor Yellow
 
 # Check if uv is available
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
@@ -24,10 +37,16 @@ if (Test-Path "pyproject.toml") {
 
 Write-Host "📦 Building version: $Version" -ForegroundColor Cyan
 
-# Set build directories
+# Set build directories and output based on build mode
 $BuildDir = "build\windows"
 $DistDir = "dist\windows"
-$OutputFile = "pandoc-ui-windows-$Version.exe"
+
+if ($Standalone) {
+    $OutputFile = "pandoc-ui-windows-$Version"
+    $OutputDir = "$DistDir\$OutputFile"
+} else {
+    $OutputFile = "pandoc-ui-windows-$Version.exe"
+}
 
 # Clean previous builds
 Write-Host "🧹 Cleaning previous builds..." -ForegroundColor Cyan
@@ -69,9 +88,7 @@ try {
     
     $NuitkaArgs = @(
         "run", "python", "-m", "nuitka",
-        "--onefile",
         "--enable-plugin=pyside6",
-        "--disable-console",
         "--output-dir=$DistDir",
         "--output-filename=$OutputFile",
         "--company-name=pandoc-ui",
@@ -85,6 +102,23 @@ try {
         "--show-memory"
     )
     
+    # Add build mode (onefile vs standalone)
+    if ($Standalone) {
+        $NuitkaArgs += "--standalone"
+        Write-Host "📁 Building as standalone directory" -ForegroundColor Cyan
+    } else {
+        $NuitkaArgs += "--onefile"
+        Write-Host "📦 Building as single executable file" -ForegroundColor Cyan
+    }
+    
+    # Add console mode
+    if (-not $EnableConsole) {
+        $NuitkaArgs += "--disable-console"
+        Write-Host "🔇 Console disabled (GUI only)" -ForegroundColor Cyan
+    } else {
+        Write-Host "🔊 Console enabled (for debugging)" -ForegroundColor Yellow
+    }
+    
     # Add icon if found
     if ($IconPath) {
         $NuitkaArgs += "--windows-icon-from-ico=$IconPath"
@@ -96,24 +130,48 @@ try {
     & uv @NuitkaArgs
 
     # Check if build was successful
-    $OutputPath = Join-Path $DistDir $OutputFile
+    if ($Standalone) {
+        $OutputPath = $OutputDir
+        $ExecutablePath = Join-Path $OutputPath "pandoc-ui-windows-$Version.exe"
+    } else {
+        $OutputPath = Join-Path $DistDir $OutputFile
+        $ExecutablePath = $OutputPath
+    }
+    
     if (Test-Path $OutputPath) {
         Write-Host ""
         Write-Host "✅ Build successful!" -ForegroundColor Green
         Write-Host "📁 Output: $OutputPath" -ForegroundColor White
         
         # Get file size
-        $FileSize = [math]::Round((Get-Item $OutputPath).Length / 1MB, 2)
-        Write-Host "📊 File size: $FileSize MB" -ForegroundColor White
+        if ($Standalone) {
+            $DirSize = [math]::Round((Get-ChildItem $OutputPath -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB, 2)
+            Write-Host "📊 Directory size: $DirSize MB" -ForegroundColor White
+            Write-Host "📄 Executable: $ExecutablePath" -ForegroundColor White
+        } else {
+            $FileSize = [math]::Round((Get-Item $OutputPath).Length / 1MB, 2)
+            Write-Host "📊 File size: $FileSize MB" -ForegroundColor White
+        }
         
         # Test if the executable works
         Write-Host "🧪 Testing executable..." -ForegroundColor Cyan
         try {
-            $TestResult = & $OutputPath --help 2>$null
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "✅ Executable test passed" -ForegroundColor Green
+            if ($EnableConsole) {
+                # For console builds, test with --help
+                $TestResult = & $ExecutablePath --help 2>$null
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "✅ Executable test passed" -ForegroundColor Green
+                } else {
+                    Write-Host "⚠️  Executable test failed, but build completed" -ForegroundColor Yellow
+                }
             } else {
-                Write-Host "⚠️  Executable test failed, but build completed" -ForegroundColor Yellow
+                # For GUI-only builds, just check if executable exists and is valid
+                if (Test-Path $ExecutablePath) {
+                    Write-Host "✅ Executable created successfully" -ForegroundColor Green
+                    Write-Host "ℹ️  GUI-only build - test by running manually" -ForegroundColor Cyan
+                } else {
+                    Write-Host "⚠️  Executable not found" -ForegroundColor Yellow
+                }
             }
         } catch {
             Write-Host "⚠️  Could not test executable, but build completed" -ForegroundColor Yellow
@@ -124,9 +182,21 @@ try {
         Write-Host "📦 Package: $OutputPath" -ForegroundColor White
         Write-Host ""
         Write-Host "💡 To distribute:" -ForegroundColor White
-        Write-Host "   - Copy the .exe file to target Windows systems" -ForegroundColor Gray
+        if ($Standalone) {
+            Write-Host "   - Copy the entire directory to target Windows systems" -ForegroundColor Gray
+            Write-Host "   - Run the .exe file inside the directory" -ForegroundColor Gray
+        } else {
+            Write-Host "   - Copy the .exe file to target Windows systems" -ForegroundColor Gray
+        }
         Write-Host "   - No additional dependencies required" -ForegroundColor Gray
         Write-Host "   - No Python installation required on target systems" -ForegroundColor Gray
+        
+        if ($EnableConsole) {
+            Write-Host ""
+            Write-Host "🐛 Debug Info:" -ForegroundColor Yellow
+            Write-Host "   - Console window enabled - you can see error messages" -ForegroundColor Gray
+            Write-Host "   - Use -EnableConsole to debug GUI issues" -ForegroundColor Gray
+        }
         
     } else {
         Write-Host "❌ Build failed! Output file not found." -ForegroundColor Red
