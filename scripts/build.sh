@@ -123,6 +123,7 @@ NUITKA_ARGS=(
     --assume-yes-for-downloads
     --show-progress
     --show-memory
+    --include-data-file=pandoc_ui/gui/main_window.ui=pandoc_ui/gui/main_window.ui
 )
 
 # Add platform-specific arguments

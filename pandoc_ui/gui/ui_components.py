@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QRadioButton,
     QSpinBox,
@@ -290,6 +291,23 @@ class MainWindowUI(QObject):
         self.convertButton.setMinimumHeight(40)
         main_layout.addWidget(self.convertButton)
 
+        # Status and Progress section
+        status_group = QGroupBox("Status")
+        status_layout = QVBoxLayout(status_group)
+        
+        # Status label
+        self.statusLabel = QLabel("Ready")
+        self.statusLabel.setStyleSheet("color: #666; font-weight: bold;")
+        status_layout.addWidget(self.statusLabel)
+        
+        # Progress bar
+        self.progressBar = QProgressBar()
+        self.progressBar.setRange(0, 100)
+        self.progressBar.setValue(0)
+        status_layout.addWidget(self.progressBar)
+        
+        main_layout.addWidget(status_group)
+
         # Log area
         log_group = QGroupBox("Conversion Log")
         log_layout = QVBoxLayout(log_group)
@@ -352,6 +370,8 @@ class MainWindowUI(QObject):
                     "TextEdit",
                     "Radio",
                     "GroupBox",
+                    "Label",
+                    "Bar",
                 )
             ):
                 setattr(self.ui, attr_name, getattr(self, attr_name))
@@ -388,6 +408,8 @@ class MainWindowUI(QObject):
         self.outputDirEdit = QLineEdit()
         self.browseOutputButton = QPushButton("Browse Output")
         self.convertButton = QPushButton("Convert")
+        self.statusLabel = QLabel("Ready")
+        self.progressBar = QProgressBar()
         self.logTextEdit = QTextEdit()
 
         layout.addWidget(QLabel("Input:"))
@@ -403,6 +425,9 @@ class MainWindowUI(QObject):
         layout.addLayout(output_layout)
 
         layout.addWidget(self.convertButton)
+        layout.addWidget(QLabel("Status:"))
+        layout.addWidget(self.statusLabel)
+        layout.addWidget(self.progressBar)
         layout.addWidget(QLabel("Log:"))
         layout.addWidget(self.logTextEdit)
 
@@ -417,6 +442,8 @@ class MainWindowUI(QObject):
             "outputDirEdit",
             "browseOutputButton",
             "convertButton",
+            "statusLabel",
+            "progressBar",
             "logTextEdit",
         ]:
             setattr(self.ui, attr_name, getattr(self, attr_name))
@@ -1120,10 +1147,14 @@ class MainWindowUI(QObject):
         if service.is_pandoc_available():
             pandoc_info = service.get_pandoc_info()
             self.addLogMessage(f"✅ Pandoc detected: {pandoc_info.path} (v{pandoc_info.version})")
-            self.ui.statusLabel.setText("Ready - Pandoc available")
+            # Safely set status label if it exists
+            if hasattr(self.ui, 'statusLabel'):
+                self.ui.statusLabel.setText("Ready - Pandoc available")
         else:
             self.addLogMessage("❌ Pandoc not found! Please install Pandoc from https://pandoc.org")
-            self.ui.statusLabel.setText("Pandoc not available")
+            # Safely set status label if it exists
+            if hasattr(self.ui, 'statusLabel'):
+                self.ui.statusLabel.setText("Pandoc not available")
 
             # Show warning
             QMessageBox.warning(
