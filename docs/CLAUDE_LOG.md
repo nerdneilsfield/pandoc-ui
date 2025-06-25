@@ -1,5 +1,97 @@
 # Claude Development Log
 
+## 2025-06-25-11:45 - Complete Icon System Implementation
+
+### Task
+Implement comprehensive icon and UI resource system for pandoc-ui with multi-resolution support, cross-platform compatibility, and proper Qt integration.
+
+### Implementation
+
+#### 🎨 Icon Generation Infrastructure
+- **Created dual-platform icon generation scripts:**
+  - `scripts/generate_icons.sh` (Linux/macOS with ImageMagick)
+  - `scripts/generate_icons.ps1` (Windows PowerShell with ImageMagick/magick)
+  - Generate 9 resolutions: 16px-1024px from single source `resources/logo.png`
+  - Support Windows ICO, macOS ICNS, and Linux PNG formats
+
+#### 📦 Qt Resource System
+- **Created Qt resource compilation scripts:**
+  - `scripts/generate_resources.sh` (Linux/macOS with pyside6-rcc)
+  - `scripts/generate_resources.ps1` (Windows PowerShell with pyside6-rcc)
+  - Compile `resources.qrc` to `resources_rc.py` for runtime access
+  - Support HiDPI with @2x and @3x variants
+
+#### 🏗️ Dual Resource Architecture
+- **External resources** (`resources/icons/`) - For Nuitka build inclusion
+- **Qt internal resources** (`pandoc_ui/resources/icons/`) - For compiled Qt resources
+- Clear separation ensures both development and packaging work seamlessly
+
+#### 🔧 Build System Integration
+- **Updated build scripts** to auto-generate resources if outdated
+- **Enhanced Linux build script** (`scripts/build.sh`):
+  - Auto-check and regenerate Qt resources
+  - Include Qt resource directory in Nuitka packaging
+- **Enhanced Windows build script** (`scripts/windows_build.ps1`):
+  - Use PowerShell-native resource generation
+  - Proper timestamp checking for resource updates
+
+#### 💻 Application Integration
+- **Modified `pandoc_ui/main.py`:**
+  - Import and set application icon via Qt resources (`:/icons/logo`)
+  - Graceful fallback if resources unavailable
+  - Debug logging for icon loading status
+  - Support for window and taskbar icons
+
+### Files Created
+- `scripts/generate_icons.sh` - Unix icon generation with ImageMagick
+- `scripts/generate_icons.ps1` - Windows icon generation with ImageMagick
+- `scripts/generate_resources.sh` - Unix Qt resource compilation
+- `scripts/generate_resources.ps1` - Windows Qt resource compilation
+- `pandoc_ui/resources/resources.qrc` - Qt resource definition file
+- `pandoc_ui/resources/resources_rc.py` - Compiled Qt resource module
+- Generated icon files in both `resources/icons/` and `pandoc_ui/resources/icons/`
+
+### Files Modified
+- `pandoc_ui/main.py` - Added icon loading via Qt resources
+- `scripts/build.sh` - Added Qt resource auto-generation and inclusion
+- `scripts/windows_build.ps1` - Added PowerShell resource generation calls
+- `BUILD.md` - Added comprehensive icon generation documentation
+
+### Decisions
+- **Dual resource structure**: Separate external (Nuitka) and internal (Qt) resources
+- **Platform-specific scripts**: Native shell scripts for better platform integration
+- **Automatic resource management**: Build scripts handle resource generation transparently
+- **Multi-resolution support**: 9 standard sizes for various use cases and HiDPI displays
+- **Graceful degradation**: Application works even if icon resources fail to load
+
+### Technical Details
+- **Icon formats**: PNG (all platforms), ICO (Windows), ICNS (macOS), SVG (Linux backup)
+- **Qt resource path**: `:/icons/logo` for main icon, `:/icons/logo_XX` for specific sizes
+- **HiDPI support**: `:/icons/logo@2x` and `:/icons/logo@3x` for high-density displays
+- **Build inclusion**: `--include-data-dir=pandoc_ui/resources=pandoc_ui/resources` in Nuitka
+- **Auto-detection**: ImageMagick command detection (`convert` vs `magick convert`)
+
+### Testing Results
+- ✅ Icon successfully loaded in development environment (`Application icon set from Qt resources`)
+- ✅ Packaged executable displays proper icon in window and taskbar
+- ✅ Build scripts properly detect and regenerate resources when needed
+- ✅ Cross-platform resource generation tested on Linux (Windows PowerShell scripts created but not yet tested)
+
+### Next Steps
+- Test Windows PowerShell icon generation scripts on actual Windows system
+- Consider adding system tray icon support using the same resource system
+- Implement about dialog with application icon display
+- Add icon to installer/package metadata
+
+### Impact
+This implementation provides a professional, scalable icon system that:
+- Ensures consistent branding across all platforms and build types
+- Supports modern high-DPI displays with appropriate resolution variants
+- Integrates seamlessly with both development and production workflows
+- Eliminates the previous UI inconsistency between dev and packaged versions
+
+---
+
 ## 2025-06-24-14:30 - Phase 5 Scripts and GUI Test Infrastructure
 
 ### Task

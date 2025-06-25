@@ -7,6 +7,7 @@ import logging
 import os
 import sys
 
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMainWindow
 
 from pandoc_ui.gui.ui_components import MainWindowUI
@@ -97,6 +98,18 @@ def main():
     app.setApplicationName("Pandoc UI")
     app.setApplicationVersion("0.1.0")
     app.setOrganizationName("pandoc-ui")
+    
+    # Set application icon
+    try:
+        # Import Qt resources
+        from pandoc_ui.resources import resources_rc
+        # Set the main application icon
+        app.setWindowIcon(QIcon(":/icons/logo"))
+        logger.debug("Application icon set from Qt resources")
+    except ImportError:
+        logger.warning("Qt resources not available, icon not set")
+    except Exception as e:
+        logger.warning(f"Failed to set application icon: {e}")
 
     # High DPI scaling is enabled by default in Qt 6
     # The AA_EnableHighDpiScaling and AA_UseHighDpiPixmaps attributes are deprecated in Qt 6

@@ -72,6 +72,16 @@ try {
         exit 1
     }
 
+    # Generate Qt resources if needed
+    Write-Host "🎨 Ensuring Qt resources are up to date..." -ForegroundColor Cyan
+    if (-not (Test-Path "pandoc_ui\resources\resources_rc.py") -or 
+        (Get-Item "pandoc_ui\resources\resources.qrc").LastWriteTime -gt (Get-Item "pandoc_ui\resources\resources_rc.py").LastWriteTime) {
+        Write-Host "📦 Generating Qt resources..." -ForegroundColor Yellow
+        & .\scripts\generate_resources.ps1
+    } else {
+        Write-Host "✅ Qt resources are up to date" -ForegroundColor Green
+    }
+
     # Look for icon file
     $IconPath = ""
     $PossibleIcons = @("resources\icons\app.ico", "assets\app.ico", "icon.ico")
@@ -100,7 +110,8 @@ try {
         "--assume-yes-for-downloads",
         "--show-progress",
         "--show-memory",
-        "--include-data-file=pandoc_ui\gui\main_window.ui=pandoc_ui\gui\main_window.ui"
+        "--include-data-file=pandoc_ui\gui\main_window.ui=pandoc_ui\gui\main_window.ui",
+        "--include-data-dir=pandoc_ui\resources=pandoc_ui\resources"
     )
     
     # Add build mode (onefile vs standalone)

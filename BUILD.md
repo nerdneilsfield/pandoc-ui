@@ -6,15 +6,28 @@ This document explains how to build pandoc-ui into standalone executables for di
 
 - [uv](https://github.com/astral-sh/uv) package manager installed
 - Python 3.12+ with PySide6
+- **ImageMagick** for icon generation (see Icon Generation section)
 - Platform-specific requirements (see below)
 
 ## Quick Start
 
+### Icon Generation (First Time Setup)
+
+Before building, generate icons from your logo:
+
+```bash
+# Linux/macOS
+./scripts/generate_icons.sh
+./scripts/generate_resources.sh
+
+# Windows (PowerShell)
+.\scripts\generate_icons.ps1
+.\scripts\generate_resources.ps1
+```
+
 ### Build by Platform
 
 Choose the appropriate script for your platform:
-
-### Platform-Specific Builds
 
 ```bash
 # Linux and macOS (unified)
@@ -23,6 +36,8 @@ Choose the appropriate script for your platform:
 # Windows (PowerShell only)
 .\scripts\windows_build.ps1
 ```
+
+**Note**: Build scripts automatically generate resources if needed.
 
 ## Platform Requirements
 
@@ -182,3 +197,86 @@ Each script builds for its host platform only. For cross-platform builds:
 ```
 
 See `.github/workflows/` for complete CI/CD examples.
+
+## Icon Generation
+
+### Prerequisites for Icon Generation
+
+**ImageMagick** is required for generating multi-resolution icons:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install imagemagick
+
+# macOS
+brew install imagemagick
+
+# Windows
+# Download from: https://imagemagick.org/script/download.php#windows
+# Or via chocolatey: choco install imagemagick
+```
+
+### Icon Generation Scripts
+
+#### Linux/macOS
+
+```bash
+# Generate all icon formats from resources/logo.png
+./scripts/generate_icons.sh
+
+# Compile Qt resources
+./scripts/generate_resources.sh
+```
+
+#### Windows (PowerShell)
+
+```powershell
+# Generate all icon formats from resources/logo.png
+.\scripts\generate_icons.ps1
+
+# Compile Qt resources  
+.\scripts\generate_resources.ps1
+```
+
+### Generated Icon Structure
+
+```
+resources/icons/                    # For Nuitka builds
+├── logo_16.png ... logo_1024.png  # Individual PNG files
+├── app.ico                         # Windows ICO file
+├── app.iconset/                    # macOS iconset directory
+└── app.png                         # Main PNG (256px)
+
+pandoc_ui/resources/icons/          # For Qt internal resources
+├── logo_16.png ... logo_1024.png  # Individual PNG files
+└── app.png                         # Main PNG (256px)
+
+pandoc_ui/resources/
+├── resources.qrc                   # Qt resource definition
+└── resources_rc.py                 # Compiled Qt resources
+```
+
+### Icon Usage in Application
+
+Icons are automatically loaded via Qt resources:
+
+```python
+from pandoc_ui.resources import resources_rc
+icon = QIcon(":/icons/logo")        # Main application icon
+icon_small = QIcon(":/icons/logo_16")  # Small icon (16px)
+icon_hires = QIcon(":/icons/logo@2x")  # High-DPI icon
+```
+
+### Custom Logo
+
+To use your own logo:
+
+1. Replace `resources/logo.png` with your design
+2. Run icon generation scripts
+3. Build the application
+
+**Logo Requirements:**
+- Format: PNG recommended (SVG also supported)
+- Size: 1024x1024px or larger for best results
+- Background: Transparent recommended
+- Style: Should work well at small sizes (16px+)

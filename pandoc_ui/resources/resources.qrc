@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RCC>
+    <qresource prefix="/icons">
+        <!-- Main application icon (256px default) -->
+        <file alias="logo">icons/app.png</file>
+        
+        <!-- Multiple resolution icons for different use cases -->
+        <file alias="logo_16">icons/logo_16.png</file>
+        <file alias="logo_24">icons/logo_24.png</file>
+        <file alias="logo_32">icons/logo_32.png</file>
+        <file alias="logo_48">icons/logo_48.png</file>
+        <file alias="logo_64">icons/logo_64.png</file>
+        <file alias="logo_128">icons/logo_128.png</file>
+        <file alias="logo_256">icons/logo_256.png</file>
+        <file alias="logo_512">icons/logo_512.png</file>
+        
+        <!-- High DPI versions -->
+        <file alias="logo@2x">icons/logo_512.png</file>
+        <file alias="logo@3x">icons/logo_1024.png</file>
+    </qresource>
+    
+    <qresource prefix="/ui">
+        <!-- UI files can be added here if needed -->
+        <!-- <file>ui/main_window.ui</file> -->
+    </qresource>
+</RCC>

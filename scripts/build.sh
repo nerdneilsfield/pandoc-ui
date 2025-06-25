@@ -57,6 +57,15 @@ if ! uv run python -c "import PySide6" 2>/dev/null; then
     exit 1
 fi
 
+# Generate Qt resources if needed
+echo "🎨 Ensuring Qt resources are up to date..."
+if [ ! -f "pandoc_ui/resources/resources_rc.py" ] || [ "pandoc_ui/resources/resources.qrc" -nt "pandoc_ui/resources/resources_rc.py" ]; then
+    echo "📦 Generating Qt resources..."
+    ./scripts/generate_resources.sh
+else
+    echo "✅ Qt resources are up to date"
+fi
+
 # Platform-specific preparations
 if [ "$PLATFORM" = "linux" ]; then
     echo "🐧 Preparing Linux-specific build settings..."
@@ -124,6 +133,7 @@ NUITKA_ARGS=(
     --show-progress
     --show-memory
     --include-data-file=pandoc_ui/gui/main_window.ui=pandoc_ui/gui/main_window.ui
+    --include-data-dir=pandoc_ui/resources=pandoc_ui/resources
 )
 
 # Add platform-specific arguments
