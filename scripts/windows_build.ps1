@@ -112,11 +112,12 @@ try {
     }
     
     # Add console mode
-    if (-not $EnableConsole) {
+    if ($EnableConsole) {
+        # Don't add any console flags - this keeps console enabled
+        Write-Host "🔊 Console enabled (for debugging)" -ForegroundColor Yellow
+    } else {
         $NuitkaArgs += "--disable-console"
         Write-Host "🔇 Console disabled (GUI only)" -ForegroundColor Cyan
-    } else {
-        Write-Host "🔊 Console enabled (for debugging)" -ForegroundColor Yellow
     }
     
     # Add icon if found
@@ -157,18 +158,22 @@ try {
         Write-Host "🧪 Testing executable..." -ForegroundColor Cyan
         try {
             if ($EnableConsole) {
-                # For console builds, test with --help
+                # For console builds, test with --help and show debug info
+                Write-Host "ℹ️  Testing with debug console..." -ForegroundColor Cyan
                 $TestResult = & $ExecutablePath --help 2>$null
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "✅ Executable test passed" -ForegroundColor Green
+                    Write-Host "🔧 To run with debug console: $ExecutablePath --debug" -ForegroundColor Yellow
                 } else {
                     Write-Host "⚠️  Executable test failed, but build completed" -ForegroundColor Yellow
+                    Write-Host "🔧 Try running with: $ExecutablePath --debug" -ForegroundColor Yellow
                 }
             } else {
                 # For GUI-only builds, just check if executable exists and is valid
                 if (Test-Path $ExecutablePath) {
                     Write-Host "✅ Executable created successfully" -ForegroundColor Green
                     Write-Host "ℹ️  GUI-only build - test by running manually" -ForegroundColor Cyan
+                    Write-Host "🔧 For debugging, run: $ExecutablePath --debug" -ForegroundColor Cyan
                 } else {
                     Write-Host "⚠️  Executable not found" -ForegroundColor Yellow
                 }
@@ -191,12 +196,14 @@ try {
         Write-Host "   - No additional dependencies required" -ForegroundColor Gray
         Write-Host "   - No Python installation required on target systems" -ForegroundColor Gray
         
+        Write-Host ""
+        Write-Host "🐛 Debug Info:" -ForegroundColor Yellow
         if ($EnableConsole) {
-            Write-Host ""
-            Write-Host "🐛 Debug Info:" -ForegroundColor Yellow
-            Write-Host "   - Console window enabled - you can see error messages" -ForegroundColor Gray
-            Write-Host "   - Use -EnableConsole to debug GUI issues" -ForegroundColor Gray
+            Write-Host "   - Console window enabled in build" -ForegroundColor Gray
         }
+        Write-Host "   - Run with --debug flag to see detailed error messages:" -ForegroundColor Gray
+        Write-Host "     $ExecutablePath --debug" -ForegroundColor Cyan
+        Write-Host "   - This will allocate a console window and show all log output" -ForegroundColor Gray
         
     } else {
         Write-Host "❌ Build failed! Output file not found." -ForegroundColor Red

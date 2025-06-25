@@ -2,6 +2,7 @@
 Main entry point for pandoc-ui GUI application.
 """
 
+import argparse
 import logging
 import os
 import sys
@@ -40,9 +41,42 @@ class PandocUIMainWindow(QMainWindow):
 
 def main():
     """Main application entry point."""
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Pandoc UI - Graphical interface for document conversion")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode with console output")
+    parser.add_argument("--version", action="version", version="Pandoc UI 0.1.0")
+    args = parser.parse_args()
+    
+    # Windows console allocation for debugging
+    if args.debug and sys.platform == "win32":
+        try:
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            kernel32.AllocConsole()
+            # Redirect stdout and stderr to console
+            sys.stdout = open('CONOUT$', 'w')
+            sys.stderr = open('CONOUT$', 'w')
+            print("🐛 Debug console allocated")
+        except Exception as e:
+            pass  # Ignore console allocation errors
+    
     # Setup logging
-    setup_logging()
+    if args.debug:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            handlers=[logging.StreamHandler(sys.stdout)],
+        )
+    else:
+        setup_logging()
+    
     logger = logging.getLogger(__name__)
+    
+    if args.debug:
+        logger.debug("Debug mode enabled")
+        logger.debug(f"Platform: {sys.platform}")
+        logger.debug(f"Python version: {sys.version}")
+        logger.debug(f"Command line args: {sys.argv}")
 
     # Force Qt platform plugin for WSL compatibility
     if not os.environ.get("QT_QPA_PLATFORM"):
