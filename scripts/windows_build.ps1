@@ -72,6 +72,30 @@ try {
         exit 1
     }
 
+    # Generate translations if needed
+    Write-Host "🌍 Ensuring translations are up to date..." -ForegroundColor Cyan
+    $NeedTranslations = $false
+    
+    # Check if .qm files exist and are up to date
+    $Languages = @("zh_CN", "en_US", "ja_JP")
+    foreach ($Lang in $Languages) {
+        $QmFile = "pandoc_ui\translations\pandoc_ui_$Lang.qm"
+        $TsFile = "pandoc_ui\translations\pandoc_ui_$Lang.ts"
+        
+        if (-not (Test-Path $QmFile) -or 
+            ((Test-Path $TsFile) -and (Get-Item $TsFile).LastWriteTime -gt (Get-Item $QmFile).LastWriteTime)) {
+            $NeedTranslations = $true
+            break
+        }
+    }
+    
+    if ($NeedTranslations) {
+        Write-Host "📦 Generating translations..." -ForegroundColor Yellow
+        & .\scripts\generate_translations.ps1
+    } else {
+        Write-Host "✅ Translations are up to date" -ForegroundColor Green
+    }
+
     # Generate Qt resources if needed
     Write-Host "🎨 Ensuring Qt resources are up to date..." -ForegroundColor Cyan
     if (-not (Test-Path "pandoc_ui\resources\resources_rc.py") -or 

@@ -19,6 +19,13 @@
         <file alias="logo@3x">icons/logo_1024.png</file>
     </qresource>
     
+    <qresource prefix="/i18n">
+        <!-- Translation files -->
+        <file alias="pandoc_ui_zh_CN.qm">../translations/pandoc_ui_zh_CN.qm</file>
+        <file alias="pandoc_ui_en_US.qm">../translations/pandoc_ui_en_US.qm</file>
+        <file alias="pandoc_ui_ja_JP.qm">../translations/pandoc_ui_ja_JP.qm</file>
+    </qresource>
+    
     <qresource prefix="/ui">
         <!-- UI files can be added here if needed -->
         <!-- <file>ui/main_window.ui</file> -->

@@ -248,6 +248,118 @@
      </widget>
     </item>
     <item>
+     <widget class="QGroupBox" name="commandPreviewGroupBox">
+      <property name="title">
+       <string>Command Preview</string>
+      </property>
+      <layout class="QVBoxLayout" name="commandPreviewLayout">
+       <item>
+        <widget class="QLabel" name="commandInfoLabel">
+         <property name="text">
+          <string>Preview of pandoc command that will be executed:</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QTextEdit" name="commandDisplayEdit">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>120</height>
+          </size>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>80</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>Consolas</family>
+           <pointsize>9</pointsize>
+          </font>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QTextEdit {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 8px;
+    color: #212529;
+}</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="customArgsGroupBox">
+         <property name="title">
+          <string>Custom Arguments</string>
+         </property>
+         <layout class="QVBoxLayout" name="customArgsLayout">
+          <item>
+           <widget class="QLabel" name="customArgsHelpLabel">
+            <property name="text">
+             <string>Add custom pandoc arguments (e.g., --metadata title="My Title" --toc):</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="customArgsInputLayout">
+            <item>
+             <widget class="QLineEdit" name="customArgsEdit">
+              <property name="placeholderText">
+               <string>Enter custom pandoc arguments...</string>
+              </property>
+              <property name="toolTip">
+               <string>Additional arguments to append to the pandoc command</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="clearArgsButton">
+              <property name="text">
+               <string>Clear</string>
+              </property>
+              <property name="toolTip">
+               <string>Clear custom arguments</string>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>80</width>
+                <height>16777215</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="argsValidationLabel">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color: #dc3545; font-size: 11px;</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
      <layout class="QHBoxLayout" name="actionLayout">
       <item>
        <spacer name="actionSpacer">

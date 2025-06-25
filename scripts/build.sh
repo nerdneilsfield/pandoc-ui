@@ -57,6 +57,28 @@ if ! uv run python -c "import PySide6" 2>/dev/null; then
     exit 1
 fi
 
+# Generate translations if needed
+echo "🌍 Ensuring translations are up to date..."
+NEED_TRANSLATIONS=false
+
+# Check if .qm files exist
+for lang in zh_CN en_US ja_JP; do
+    qm_file="pandoc_ui/translations/pandoc_ui_$lang.qm"
+    ts_file="pandoc_ui/translations/pandoc_ui_$lang.ts"
+    
+    if [ ! -f "$qm_file" ] || ([ -f "$ts_file" ] && [ "$ts_file" -nt "$qm_file" ]); then
+        NEED_TRANSLATIONS=true
+        break
+    fi
+done
+
+if [ "$NEED_TRANSLATIONS" = true ]; then
+    echo "📦 Generating translations..."
+    ./scripts/generate_translations.sh
+else
+    echo "✅ Translations are up to date"
+fi
+
 # Generate Qt resources if needed
 echo "🎨 Ensuring Qt resources are up to date..."
 if [ ! -f "pandoc_ui/resources/resources_rc.py" ] || [ "pandoc_ui/resources/resources.qrc" -nt "pandoc_ui/resources/resources_rc.py" ]; then

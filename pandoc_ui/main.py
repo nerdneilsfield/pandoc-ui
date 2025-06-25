@@ -99,7 +99,7 @@ def main():
     app.setApplicationVersion("0.1.0")
     app.setOrganizationName("pandoc-ui")
     
-    # Set application icon
+    # Set application icon and load translations
     try:
         # Import Qt resources
         from pandoc_ui.resources import resources_rc
@@ -110,6 +110,23 @@ def main():
         logger.warning("Qt resources not available, icon not set")
     except Exception as e:
         logger.warning(f"Failed to set application icon: {e}")
+    
+    # Initialize translations
+    try:
+        from pandoc_ui.infra.translation_manager import get_translation_manager
+        translation_manager = get_translation_manager()
+        
+        # Load system default language
+        current_lang = translation_manager.get_current_language()
+        success = translation_manager.set_language(current_lang)
+        
+        if success:
+            logger.debug(f"Translations loaded for: {current_lang.native_name}")
+        else:
+            logger.warning(f"Failed to load translations for: {current_lang.native_name}")
+            
+    except Exception as e:
+        logger.warning(f"Failed to initialize translations: {e}")
 
     # High DPI scaling is enabled by default in Qt 6
     # The AA_EnableHighDpiScaling and AA_UseHighDpiPixmaps attributes are deprecated in Qt 6

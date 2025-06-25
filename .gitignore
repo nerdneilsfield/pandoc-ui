@@ -272,3 +272,4 @@ test_*.pdf
 integration_test.*
 final_test.*
 test.pdf
+nuitka-crash-report.xml

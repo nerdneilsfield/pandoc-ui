@@ -69,7 +69,15 @@ class PandocRunner:
         # Add custom options from profile
         if profile.options:
             for key, value in profile.options.items():
-                if value is True:
+                if key == "custom_args" and value:
+                    # Handle custom arguments string
+                    import shlex
+                    try:
+                        custom_parts = shlex.split(str(value))
+                        cmd.extend(custom_parts)
+                    except ValueError as e:
+                        logger.warning(f"Invalid custom arguments format: {e}")
+                elif value is True:
                     cmd.append(f"--{key}")
                 elif value is not False and value is not None:
                     cmd.extend([f"--{key}", str(value)])

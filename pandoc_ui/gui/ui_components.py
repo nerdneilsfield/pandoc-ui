@@ -33,6 +33,7 @@ from ..app.task_queue import TaskQueue
 from ..infra.config_manager import initialize_config
 from ..infra.format_manager import FormatManager
 from ..infra.settings_store import Language, SettingsStore
+from ..infra.translation_manager import get_translation_manager
 from ..models import ConversionProfile, ConversionResult, InputFormat, OutputFormat
 from .conversion_worker import ConversionWorker
 
@@ -55,6 +56,7 @@ class MainWindowUI(QObject):
         self.input_file_path: Path | None = None
         self.input_folder_path: Path | None = None
         self.is_batch_mode: bool = False
+        self.custom_args: str = ""
 
         # Initialize configuration management first
         initialize_config()
@@ -72,6 +74,11 @@ class MainWindowUI(QObject):
         self.settings_store = SettingsStore()
         self.current_settings = self.settings_store.load_settings()
 
+        # Command preview timer for debounced updates
+        self.preview_update_timer = QTimer()
+        self.preview_update_timer.setSingleShot(True)
+        self.preview_update_timer.timeout.connect(self.updateCommandPreview)
+
         # Load UI
         self.setupUi()
 
@@ -80,6 +87,7 @@ class MainWindowUI(QObject):
 
         # Initialize UI state
         self.updateConvertButtonState()
+        self.updateCommandPreview()
         self.addLogMessage("🚀 Pandoc UI initialized", "INFO")
 
         # Check pandoc availability on startup
@@ -117,6 +125,17 @@ class MainWindowUI(QObject):
 
             # Initialize profile management UI
             self.initializeProfileUI()
+            
+            # Check if we need to retranslate UI after automatic language detection
+            from ..infra.translation_manager import get_translation_manager
+            translation_manager = get_translation_manager()
+            current_lang = translation_manager.get_current_language()
+            
+            # If the current language is not English, retranslate the UI
+            if current_lang.code != 'en_US':
+                logger.info(f"Retranslating UI for detected language: {current_lang.native_name}")
+                self.retranslateUi()
+            
             logger.info("Profile UI initialized")
 
         except Exception as e:
@@ -347,9 +366,7 @@ class MainWindowUI(QObject):
         lang_layout.addStretch()
         lang_layout.addWidget(QLabel("Language:"))
         self.languageComboBox = QComboBox()
-        self.languageComboBox.addItems(
-            ["English", "中文", "日本語", "한국어", "Français", "Deutsch", "Español"]
-        )
+        # Language items will be populated in initializeProfile method
         lang_layout.addWidget(self.languageComboBox)
         main_layout.addLayout(lang_layout)
 
@@ -613,6 +630,12 @@ class MainWindowUI(QObject):
             if hasattr(self.ui, "languageComboBox"):
                 self.ui.languageComboBox.currentTextChanged.connect(self.onLanguageChanged)
 
+            # Command preview and custom arguments (optional)
+            if hasattr(self.ui, "customArgsEdit"):
+                self.ui.customArgsEdit.textChanged.connect(self.onCustomArgsChanged)
+            if hasattr(self.ui, "clearArgsButton"):
+                self.ui.clearArgsButton.clicked.connect(self.clearCustomArgs)
+
             logger.info("UI signals connected successfully")
         except Exception as e:
             logger.error(f"Failed to connect signals: {str(e)}", exc_info=True)
@@ -648,6 +671,7 @@ class MainWindowUI(QObject):
                     self.ui.outputDirEdit.setText(str(file_path.parent))
 
                 self.addLogMessage(f"📁 Input file selected: {file_path.name}")
+                self.updateCommandPreview()
 
     def browseFolderInput(self):
         """Open directory dialog to select input folder for batch processing."""
@@ -671,6 +695,7 @@ class MainWindowUI(QObject):
 
             # Scan folder to preview files
             self.scanInputFolder()
+            self.updateCommandPreview()
 
     @Slot()
     def browseOutputDirectory(self):
@@ -712,6 +737,7 @@ class MainWindowUI(QObject):
             f"🔄 Mode changed to: {'Batch' if self.is_batch_mode else 'Single File'}"
         )
         self.updateConvertButtonState()
+        self.updateCommandPreview()
 
     @Slot()
     def onExtensionFilterChanged(self):
@@ -826,12 +852,17 @@ class MainWindowUI(QObject):
 
         output_path = Path(output_dir) / f"{self.input_file_path.stem}.{output_format_data.value}"
 
-        # Create conversion profile
+        # Create conversion profile with custom arguments
+        options = {}
+        if self.custom_args:
+            options["custom_args"] = self.custom_args
+            
         profile = ConversionProfile(
             input_path=self.input_file_path,
             output_path=output_path,
             input_format=input_format_data,
             output_format=output_format_data,
+            options=options,
         )
 
         # Start worker thread
@@ -913,11 +944,17 @@ class MainWindowUI(QObject):
                 )
                 continue
 
+            # Create conversion profile with custom arguments
+            options = {}
+            if self.custom_args:
+                options["custom_args"] = self.custom_args
+                
             profile = ConversionProfile(
                 input_path=input_file,
                 output_path=output_file,
                 input_format=input_format_data,
                 output_format=output_format_data,
+                options=options,
             )
 
             task_id = f"batch_{i:04d}_{input_file.name}"
@@ -1113,6 +1150,7 @@ class MainWindowUI(QObject):
         """Handle output format change."""
         format_name = self.ui.formatComboBox.currentText()
         self.addLogMessage(f"📋 Output format changed to: {format_name}")
+        self.updateCommandPreview()
 
     @Slot()
     def clearLog(self):
@@ -1146,15 +1184,26 @@ class MainWindowUI(QObject):
         service = ConversionService()
         if service.is_pandoc_available():
             pandoc_info = service.get_pandoc_info()
+            
+            # Get current language for logging
+            from ..infra.translation_manager import get_translation_manager
+            translation_manager = get_translation_manager()
+            current_lang = translation_manager.get_current_language()
+            
             self.addLogMessage(f"✅ Pandoc detected: {pandoc_info.path} (v{pandoc_info.version})")
+            self.addLogMessage(f"🌍 System language detected: {current_lang.native_name} ({current_lang.code})")
+            
             # Safely set status label if it exists
             if hasattr(self.ui, 'statusLabel'):
-                self.ui.statusLabel.setText("Ready - Pandoc available")
+                # Use translation function for status
+                status_text = self.tr("Ready - Pandoc available")
+                self.ui.statusLabel.setText(status_text)
         else:
             self.addLogMessage("❌ Pandoc not found! Please install Pandoc from https://pandoc.org")
             # Safely set status label if it exists
             if hasattr(self.ui, 'statusLabel'):
-                self.ui.statusLabel.setText("Pandoc not available")
+                status_text = self.tr("Pandoc not available")
+                self.ui.statusLabel.setText(status_text)
 
             # Show warning
             QMessageBox.warning(
@@ -1319,28 +1368,81 @@ The application will not work without Pandoc.""",
     @Slot(str)
     def onLanguageChanged(self, language_text: str):
         """Handle language selection change."""
+        from ..infra.translation_manager import Language as TranslationLanguage
+        
+        # Map UI language text to translation language codes
         language_map = {
+            "English": "en_US",
+            "简体中文": "zh_CN", 
+            "繁體中文": "zh_TW",
+            "日本語": "ja_JP",
+            "Español": "es_ES",
+            "Français": "fr_FR",
+            "Deutsch": "de_DE",
+            "한국어": "ko_KR",
+            "Русский": "ru_RU",
+        }
+        
+        # Map to settings language enum
+        settings_language_map = {
             "English": Language.ENGLISH,
-            "中文": Language.CHINESE,
+            "简体中文": Language.CHINESE,
+            "繁體中文": Language.CHINESE,  # Map to existing settings enum for now
             "日本語": Language.JAPANESE,
-            "한국어": Language.KOREAN,
+            "Español": Language.SPANISH,
             "Français": Language.FRENCH,
             "Deutsch": Language.GERMAN,
-            "Español": Language.SPANISH,
+            "한국어": Language.KOREAN,
+            "Русский": Language.ENGLISH,  # Fallback for now
         }
 
-        language = language_map.get(language_text, Language.ENGLISH)
+        language_code = language_map.get(language_text)
+        settings_language = settings_language_map.get(language_text, Language.ENGLISH)
+        
+        if not language_code:
+            self.addLogMessage(f"⚠️ Language '{language_text}' not yet supported")
+            return
 
-        # Update settings
-        if self.settings_store.update_setting("language", language.value):
-            self.addLogMessage(f"🌐 Language changed to {language_text}")
-
-            # TODO: Implement actual UI text refresh when translations are available
-            QMessageBox.information(
+        # Get translation manager and switch language
+        translation_manager = get_translation_manager()
+        
+        # Find the corresponding TranslationLanguage enum
+        target_language = None
+        for lang in TranslationLanguage:
+            if lang.value[0] == language_code:  # lang.value is (code, name, english_name)
+                target_language = lang
+                break
+        
+        if target_language:
+            success = translation_manager.set_language(target_language)
+            if success:
+                # Update settings
+                self.settings_store.update_setting("language", settings_language.value)
+                self.addLogMessage(f"🌐 Language changed to {language_text}")
+                
+                # Update UI text with new translations
+                self.retranslateUi()
+                
+                # Show confirmation with translated text
+                QMessageBox.information(
+                    self.main_window,
+                    "Language Changed",
+                    f"Language changed to {language_text}.\n"
+                    "UI text has been updated to reflect the new language.",
+                )
+            else:
+                self.addLogMessage(f"❌ Failed to switch to {language_text}")
+                QMessageBox.warning(
+                    self.main_window,
+                    "Language Switch Failed", 
+                    f"Failed to switch to {language_text}. Translation files may be missing."
+                )
+        else:
+            self.addLogMessage(f"❌ Language code '{language_code}' not found")
+            QMessageBox.warning(
                 self.main_window,
-                "Language Changed",
-                f"Language changed to {language_text}.\n"
-                "UI text refresh will be implemented in a future version.",
+                "Language Not Supported",
+                f"Language '{language_text}' is not yet supported."
             )
 
     def collectUIState(self) -> dict:
@@ -1423,19 +1525,349 @@ The application will not work without Pandoc.""",
         # Load profiles
         self.refreshProfileList()
 
-        # Set initial language
-        language = self.current_settings.language
-        language_map = {
-            Language.ENGLISH: "English",
-            Language.CHINESE: "中文",
-            Language.JAPANESE: "日本語",
-            Language.KOREAN: "한국어",
-            Language.FRENCH: "Français",
-            Language.GERMAN: "Deutsch",
-            Language.SPANISH: "Español",
-        }
+        # Initialize language dropdown with all supported languages
+        if hasattr(self.ui, "languageComboBox"):
+            from ..infra.translation_manager import Language as TranslationLanguage, get_translation_manager
+            
+            # Clear existing items and add all supported languages
+            self.ui.languageComboBox.clear()
+            
+            # Get translation manager to find current language
+            translation_manager = get_translation_manager()
+            current_lang = translation_manager.get_current_language()
+            
+            # Add all supported languages and track the current one
+            current_index = 0
+            for i, lang in enumerate(TranslationLanguage):
+                # For now, only show languages that we have some translation support for
+                if lang.code in ['en_US', 'zh_CN', 'ja_JP', 'zh_TW', 'es_ES', 'fr_FR', 'de_DE']:
+                    self.ui.languageComboBox.addItem(lang.native_name)
+                    # Check if this is the current language
+                    if lang == current_lang:
+                        current_index = self.ui.languageComboBox.count() - 1
+            
+            # Set the current detected/loaded language
+            self.ui.languageComboBox.setCurrentIndex(current_index)
+            
+            # Log the detected language
+            logger.info(f"Language dropdown initialized with current language: {current_lang.native_name}")
 
-        language_text = language_map.get(Language(language), "English")
-        index = self.ui.languageComboBox.findText(language_text)
-        if index >= 0:
-            self.ui.languageComboBox.setCurrentIndex(index)
+    # Command Preview Methods
+    @Slot(str)
+    def onCustomArgsChanged(self, text: str):
+        """Handle custom arguments text change."""
+        import shlex
+        
+        self.custom_args = text.strip()
+        
+        # Validate arguments
+        validation_label = getattr(self.ui, "argsValidationLabel", None)
+        if validation_label:
+            if self.custom_args:
+                try:
+                    # Try to parse the arguments using shell-like parsing
+                    shlex.split(self.custom_args)
+                    validation_label.hide()
+                except ValueError as e:
+                    validation_label.setText(f"Invalid argument format: {e}")
+                    validation_label.show()
+            else:
+                validation_label.hide()
+        
+        # Debounced update
+        self.preview_update_timer.start(300)  # Update after 300ms of no changes
+
+    @Slot()
+    def clearCustomArgs(self):
+        """Clear custom arguments."""
+        if hasattr(self.ui, "customArgsEdit"):
+            self.ui.customArgsEdit.clear()
+
+    @Slot()
+    def updateCommandPreview(self):
+        """Update the command preview display."""
+        try:
+            command = self._buildPreviewCommand()
+            
+            # Update command display
+            if hasattr(self.ui, "commandDisplayEdit"):
+                self.ui.commandDisplayEdit.setPlainText(command)
+            
+            # Update info label based on file count
+            if hasattr(self.ui, "commandInfoLabel"):
+                info_text = self._getPreviewInfoText()
+                self.ui.commandInfoLabel.setText(info_text)
+                
+        except Exception as e:
+            logger.error(f"Error updating command preview: {e}")
+            if hasattr(self.ui, "commandDisplayEdit"):
+                self.ui.commandDisplayEdit.setPlainText("Error generating command preview")
+
+    def _getPreviewInfoText(self) -> str:
+        """Get appropriate info text for command preview."""
+        if self.is_batch_mode and self.batch_files:
+            file_count = len(self.batch_files)
+            return f"Sample command for batch conversion ({file_count} files):"
+        elif not self.is_batch_mode and self.input_file_path:
+            return "Command for single file conversion:"
+        else:
+            return "Preview of pandoc command that will be executed:"
+
+    def _buildPreviewCommand(self) -> str:
+        """Build preview command string."""
+        import shlex
+        
+        # Get current input files
+        input_files = []
+        if self.is_batch_mode and self.batch_files:
+            input_files = self.batch_files
+        elif not self.is_batch_mode and self.input_file_path:
+            input_files = [self.input_file_path]
+        
+        if not input_files:
+            return "# No files selected"
+        
+        # Use first file as example
+        input_file = input_files[0]
+        
+        # Build basic command
+        command_parts = ["pandoc"]
+        
+        # Input format (if available)
+        input_format = getattr(self.ui, "inputFormatComboBox", None)
+        if input_format and hasattr(input_format, "currentData"):
+            format_data = input_format.currentData()
+            if format_data and format_data != "auto":
+                command_parts.extend(["-f", format_data])
+        
+        # Input file
+        command_parts.append(str(input_file))
+        
+        # Output format
+        output_format = getattr(self.ui, "formatComboBox", None)
+        if output_format and hasattr(output_format, "currentData"):
+            format_data = output_format.currentData()
+            if format_data:
+                command_parts.extend(["-t", format_data])
+        
+        # Output file
+        output_dir = getattr(self.ui, "outputDirEdit", None)
+        if output_dir and output_dir.text().strip():
+            output_path = Path(output_dir.text().strip()) / f"{input_file.stem}.{self._getOutputExtension()}"
+        else:
+            output_path = input_file.parent / f"{input_file.stem}.{self._getOutputExtension()}"
+        
+        command_parts.extend(["-o", str(output_path)])
+        
+        # Additional options (standalone, etc.)
+        standalone_check = getattr(self.ui, "standaloneCheckBox", None)
+        if standalone_check and hasattr(standalone_check, "isChecked") and standalone_check.isChecked():
+            command_parts.append("--standalone")
+        
+        # Custom arguments
+        if self.custom_args:
+            try:
+                custom_parts = shlex.split(self.custom_args)
+                command_parts.extend(custom_parts)
+            except ValueError:
+                # If parsing fails, add as comment
+                pass
+        
+        # Format command for display
+        command_str = " ".join(command_parts)
+        
+        # Add batch info if multiple files
+        if len(input_files) > 1:
+            command_str += f"\n\n# This command will be executed for each of the {len(input_files)} selected files"
+        
+        # Add custom args validation error if present
+        if self.custom_args:
+            try:
+                shlex.split(self.custom_args)
+            except ValueError:
+                command_str += "\n\n# Warning: Custom arguments contain syntax errors"
+        
+        return command_str
+
+    def _getOutputExtension(self) -> str:
+        """Get output file extension based on selected format."""
+        format_combo = getattr(self.ui, "formatComboBox", None)
+        if not format_combo or not hasattr(format_combo, "currentData"):
+            return "out"
+        
+        format_data = format_combo.currentData()
+        if not format_data:
+            return "out"
+        
+        format_extensions = {
+            "html": "html",
+            "html4": "html",
+            "html5": "html", 
+            "pdf": "pdf",
+            "docx": "docx",
+            "odt": "odt",
+            "epub": "epub",
+            "epub2": "epub",
+            "epub3": "epub",
+            "latex": "tex",
+            "markdown": "md",
+            "markdown_github": "md",
+            "markdown_mmd": "md", 
+            "markdown_phpextra": "md",
+            "markdown_strict": "md",
+            "gfm": "md",
+            "commonmark": "md",
+            "rst": "rst",
+            "plain": "txt",
+            "asciidoc": "adoc",
+            "asciidoctor": "adoc",
+            "mediawiki": "wiki",
+            "dokuwiki": "txt",
+            "textile": "textile",
+            "org": "org",
+            "rtf": "rtf",
+            "pptx": "pptx",
+            "beamer": "tex",
+            "context": "tex",
+            "man": "man",
+            "texinfo": "texi",
+            "json": "json",
+            "native": "hs",
+        }
+        
+        return format_extensions.get(format_data, format_data)
+
+    def retranslateUi(self):
+        """Update UI text after language change."""
+        from ..infra.translation_manager import tr, get_translation_manager
+        
+        # Get current language for fallback translations
+        translation_manager = get_translation_manager()
+        current_lang = translation_manager.get_current_language()
+        is_chinese = current_lang and current_lang.value[0] == "zh_CN"
+        is_japanese = current_lang and current_lang.value[0] == "ja_JP"
+        
+        # Fallback translation function for UI elements not yet in .ts files
+        def get_text(english, chinese="", chinese_tw="", japanese="", spanish="", french="", german=""):
+            current_code = current_lang.value[0] if current_lang else "en_US"
+            
+            if current_code == "zh_CN" and chinese:
+                return chinese
+            elif current_code == "zh_TW" and (chinese_tw or chinese):
+                return chinese_tw or chinese  # Fallback to simplified if traditional not available
+            elif current_code == "ja_JP" and japanese:
+                return japanese
+            elif current_code == "es_ES" and spanish:
+                return spanish
+            elif current_code == "fr_FR" and french:
+                return french
+            elif current_code == "de_DE" and german:
+                return german
+            return english
+        
+        try:
+            # Update window title
+            self.main_window.setWindowTitle(get_text(
+                "Pandoc UI - Document Converter", 
+                "Pandoc UI - 文档转换器", 
+                "Pandoc UI - 文件轉換器",
+                "Pandoc UI - ドキュメントコンバーター",
+                "Pandoc UI - Conversor de Documentos",
+                "Pandoc UI - Convertisseur de Documents",
+                "Pandoc UI - Dokumentkonverter"
+            ))
+            
+            # Update group box titles
+            if hasattr(self.ui, "inputGroupBox"):
+                self.ui.inputGroupBox.setTitle(get_text(
+                    "Input Selection", "输入选择", "輸入選擇", "入力選択", 
+                    "Selección de Entrada", "Sélection d'Entrée", "Eingabeauswahl"
+                ))
+            if hasattr(self.ui, "outputGroupBox"):
+                self.ui.outputGroupBox.setTitle(get_text(
+                    "Output Settings", "输出设置", "輸出設定", "出力設定",
+                    "Configuración de Salida", "Paramètres de Sortie", "Ausgabeeinstellungen"
+                ))
+            if hasattr(self.ui, "commandPreviewGroupBox"):
+                self.ui.commandPreviewGroupBox.setTitle(tr("Command Preview"))  # Use existing translation
+            if hasattr(self.ui, "customArgsGroupBox"):
+                self.ui.customArgsGroupBox.setTitle(tr("Custom Arguments"))  # Use existing translation
+            if hasattr(self.ui, "progressGroupBox"):
+                self.ui.progressGroupBox.setTitle(get_text("Progress", "进度", "進捗"))
+            if hasattr(self.ui, "logGroupBox"):
+                self.ui.logGroupBox.setTitle(get_text("Log Output", "日志输出", "ログ出力"))
+            if hasattr(self.ui, "profileGroupBox"):
+                self.ui.profileGroupBox.setTitle(get_text("Configuration Profiles", "配置文件", "設定プロファイル"))
+            
+            # Update radio buttons
+            if hasattr(self.ui, "singleFileModeRadio"):
+                self.ui.singleFileModeRadio.setText(get_text("Single File", "单个文件", "単一ファイル"))
+            if hasattr(self.ui, "folderModeRadio"):
+                self.ui.folderModeRadio.setText(get_text("Folder (Batch)", "文件夹（批量）", "フォルダ（バッチ）"))
+            
+            # Update labels
+            if hasattr(self.ui, "outputLabel"):
+                self.ui.outputLabel.setText(get_text("Output Format:", "输出格式：", "出力形式："))
+            if hasattr(self.ui, "outputDirLabel"):
+                self.ui.outputDirLabel.setText(get_text("Output Directory:", "输出目录：", "出力ディレクトリ："))
+            if hasattr(self.ui, "commandInfoLabel"):
+                self.ui.commandInfoLabel.setText(tr("Preview of pandoc command that will be executed:"))
+            if hasattr(self.ui, "customArgsHelpLabel"):
+                self.ui.customArgsHelpLabel.setText(tr("Add custom pandoc arguments (e.g., --metadata title=\"My Title\" --toc):"))
+            
+            # Update buttons
+            if hasattr(self.ui, "browseInputButton"):
+                if self.is_batch_mode:
+                    self.ui.browseInputButton.setText(get_text("Browse Folder...", "浏览文件夹...", "フォルダを参照..."))
+                else:
+                    self.ui.browseInputButton.setText(get_text("Browse File...", "浏览文件...", "ファイルを参照..."))
+            if hasattr(self.ui, "browseOutputButton"):
+                self.ui.browseOutputButton.setText(get_text("Browse...", "浏览...", "参照..."))
+            if hasattr(self.ui, "convertButton"):
+                if self.is_batch_mode:
+                    self.ui.convertButton.setText(get_text("Start Batch Conversion", "开始批量转换", "バッチ変換開始"))
+                else:
+                    self.ui.convertButton.setText(get_text("Start Conversion", "开始转换", "変換開始"))
+            if hasattr(self.ui, "clearLogButton"):
+                self.ui.clearLogButton.setText(get_text("Clear Log", "清除日志", "ログクリア"))
+            if hasattr(self.ui, "clearArgsButton"):
+                self.ui.clearArgsButton.setText(tr("Clear"))  # Use existing translation
+            if hasattr(self.ui, "saveProfileButton"):
+                self.ui.saveProfileButton.setText(get_text("Save Snapshot", "保存快照", "スナップショット保存"))
+            if hasattr(self.ui, "loadProfileButton"):
+                self.ui.loadProfileButton.setText(get_text("Load Snapshot", "加载快照", "スナップショット読込"))
+            if hasattr(self.ui, "deleteProfileButton"):
+                self.ui.deleteProfileButton.setText(get_text("Delete", "删除", "削除"))
+            
+            # Update placeholders
+            if hasattr(self.ui, "inputPathEdit"):
+                if self.is_batch_mode:
+                    self.ui.inputPathEdit.setPlaceholderText(get_text("Select folder for batch conversion...", "选择批量转换的文件夹...", "バッチ変換用フォルダを選択..."))
+                else:
+                    self.ui.inputPathEdit.setPlaceholderText(get_text("Select input file to convert...", "选择要转换的输入文件...", "変換する入力ファイルを選択..."))
+            if hasattr(self.ui, "outputDirEdit"):
+                self.ui.outputDirEdit.setPlaceholderText(get_text("Output directory (leave empty for same as input)", "输出目录（留空则与输入相同）", "出力ディレクトリ（空白で入力と同じ）"))
+            if hasattr(self.ui, "customArgsEdit"):
+                self.ui.customArgsEdit.setPlaceholderText(tr("Enter custom pandoc arguments..."))
+            if hasattr(self.ui, "extensionFilterEdit"):
+                self.ui.extensionFilterEdit.setPlaceholderText(get_text(".md, .rst, .txt (leave empty for auto-detect)", ".md, .rst, .txt（留空自动检测）", ".md, .rst, .txt（空白で自動検出）"))
+            
+            # Update tooltips
+            if hasattr(self.ui, "customArgsEdit"):
+                self.ui.customArgsEdit.setToolTip(tr("Additional arguments to append to the pandoc command"))
+            if hasattr(self.ui, "clearArgsButton"):
+                self.ui.clearArgsButton.setToolTip(tr("Clear custom arguments"))
+            
+            # Update status text
+            if hasattr(self.ui, "statusLabel"):
+                current_status = self.ui.statusLabel.text()
+                if "Ready" in current_status:
+                    self.ui.statusLabel.setText(get_text("Ready - Pandoc available", "就绪 - Pandoc可用", "準備完了 - Pandoc利用可能"))
+                    
+            # Update command preview
+            self.updateCommandPreview()
+            
+            logger.info(f"UI retranslated successfully")
+            
+        except Exception as e:
+            logger.error(f"Error during UI retranslation: {e}", exc_info=True)
