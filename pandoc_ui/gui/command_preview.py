@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..infra.translation_manager import tr
+from ..i18n import _
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class CommandPreviewWidget(QWidget):
         preview_layout = QVBoxLayout(preview_group)
         
         # Info label
-        self.info_label = QLabel(tr("Preview of pandoc command that will be executed:"))
+        self.info_label = QLabel(_("Preview of pandoc command that will be executed:"))
         self.info_label.setWordWrap(True)
         preview_layout.addWidget(self.info_label)
         
@@ -93,11 +93,11 @@ class CommandPreviewWidget(QWidget):
         preview_layout.addWidget(self.command_display)
         
         # Custom arguments section
-        args_group = QGroupBox(tr("Custom Arguments"))
+        args_group = QGroupBox(_("Custom Arguments"))
         args_layout = QVBoxLayout(args_group)
         
         # Help text
-        help_label = QLabel(tr("Add custom pandoc arguments (e.g., --metadata title=\"My Title\" --toc):"))
+        help_label = QLabel(_("Add custom pandoc arguments (e.g., --metadata title=\"My Title\" --toc):"))
         help_label.setWordWrap(True)
         args_layout.addWidget(help_label)
         
@@ -105,13 +105,13 @@ class CommandPreviewWidget(QWidget):
         args_input_layout = QHBoxLayout()
         
         self.args_input = QLineEdit()
-        self.args_input.setPlaceholderText(tr("Enter custom pandoc arguments..."))
-        self.args_input.setToolTip(tr("Additional arguments to append to the pandoc command"))
+        self.args_input.setPlaceholderText(_("Enter custom pandoc arguments..."))
+        self.args_input.setToolTip(_("Additional arguments to append to the pandoc command"))
         args_input_layout.addWidget(self.args_input)
         
         # Clear button
-        self.clear_args_btn = QPushButton(tr("Clear"))
-        self.clear_args_btn.setToolTip(tr("Clear custom arguments"))
+        self.clear_args_btn = QPushButton(_("Clear custom arguments"))
+        self.clear_args_btn.setToolTip(_("Clear custom arguments"))
         self.clear_args_btn.setMaximumWidth(80)
         args_input_layout.addWidget(self.clear_args_btn)
         
@@ -164,7 +164,7 @@ class CommandPreviewWidget(QWidget):
             self.validation_label.hide()
             return True
         except ValueError as e:
-            self.validation_label.setText(tr("Invalid argument format: %s") % str(e))
+            self.validation_label.setText(_("Invalid argument format: %s") % str(e))
             self.validation_label.show()
             return False
     
@@ -191,17 +191,17 @@ class CommandPreviewWidget(QWidget):
             
             # Update info label based on file count
             if len(self.current_input_files) == 0:
-                info_text = tr("No files selected.")
+                info_text = _("No files selected.")
             elif len(self.current_input_files) == 1:
-                info_text = tr("Command for single file conversion:")
+                info_text = _("Command for single file conversion:")
             else:
-                info_text = tr("Sample command for batch conversion (%d files):") % len(self.current_input_files)
+                info_text = _("Sample command for batch conversion (%d files):") % len(self.current_input_files)
             
             self.info_label.setText(info_text)
             
         except Exception as e:
             logger.error(f"Error updating command preview: {e}")
-            self.command_display.setPlainText(tr("Error generating command preview"))
+            self.command_display.setPlainText(_("Error generating command preview"))
     
     def _build_preview_command(self) -> str:
         """
@@ -211,7 +211,7 @@ class CommandPreviewWidget(QWidget):
             Command string for preview
         """
         if not self.current_profile or not self.current_input_files:
-            return tr("# No conversion profile or files selected")
+            return _("# No conversion profile or files selected")
         
         # Use first file as example for batch operations
         input_file = Path(self.current_input_files[0])
@@ -256,11 +256,11 @@ class CommandPreviewWidget(QWidget):
         
         # Add batch info if multiple files
         if len(self.current_input_files) > 1:
-            command_str += "\n\n# " + tr("This command will be executed for each of the %d selected files") % len(self.current_input_files)
+            command_str += "\n\n# " + _("This command will be executed for each of the %d selected files") % len(self.current_input_files)
         
         # Add custom args validation error if present
         if self.custom_args and not self._validate_args():
-            warning_msg = tr('Warning: Custom arguments contain syntax errors')
+            warning_msg = _('Warning: Custom arguments contain syntax errors')
             command_str += f"\n\n# {warning_msg}"
         
         return command_str

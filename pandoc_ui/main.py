@@ -113,17 +113,16 @@ def main():
     
     # Initialize translations
     try:
-        from pandoc_ui.infra.translation_manager import get_translation_manager
-        translation_manager = get_translation_manager()
+        from pandoc_ui.i18n import setup_translation, get_current_language, get_language_name
         
-        # Load system default language
-        current_lang = translation_manager.get_current_language()
-        success = translation_manager.set_language(current_lang)
+        # Setup default English translation  
+        success = setup_translation("en") 
         
         if success:
-            logger.debug(f"Translations loaded for: {current_lang.native_name}")
+            current_lang = get_current_language()
+            logger.debug(f"Translations initialized for: {get_language_name()}")
         else:
-            logger.warning(f"Failed to load translations for: {current_lang.native_name}")
+            logger.warning("Failed to initialize translations")
             
     except Exception as e:
         logger.warning(f"Failed to initialize translations: {e}")

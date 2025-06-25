@@ -11,6 +11,7 @@ from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox
 
 from ..models import ConversionProfile, ConversionResult, OutputFormat
+from ..i18n import _
 from .conversion_worker import ConversionWorker
 
 logger = logging.getLogger(__name__)
@@ -87,7 +88,7 @@ class MainWindow(QMainWindow):
     def browseInputFile(self):
         """Open file dialog to select input file."""
         file_dialog = QFileDialog(self)
-        file_dialog.setWindowTitle("Select Input File")
+        file_dialog.setWindowTitle(_("Select Input File"))
         file_dialog.setFileMode(QFileDialog.ExistingFile)
         file_dialog.setNameFilters(
             [
@@ -117,7 +118,7 @@ class MainWindow(QMainWindow):
     def browseOutputDirectory(self):
         """Open directory dialog to select output directory."""
         dir_dialog = QFileDialog(self)
-        dir_dialog.setWindowTitle("Select Output Directory")
+        dir_dialog.setWindowTitle(_("Select Output Directory"))
         dir_dialog.setFileMode(QFileDialog.Directory)
 
         if dir_dialog.exec():
@@ -129,7 +130,7 @@ class MainWindow(QMainWindow):
     def startConversion(self):
         """Start document conversion."""
         if not self.input_file_path or not self.input_file_path.exists():
-            QMessageBox.warning(self, "Error", "Please select a valid input file")
+            QMessageBox.warning(self, _("Error"), _("Please select a valid input file"))
             return
 
         # Get output format
@@ -140,7 +141,7 @@ class MainWindow(QMainWindow):
         try:
             output_format = OutputFormat(format_text)
         except ValueError:
-            QMessageBox.warning(self, "Error", f"Unsupported output format: {format_text}")
+            QMessageBox.warning(self, _("Error"), _("Unsupported output format: %s") % format_text)
             return
 
         # Determine output path
@@ -213,13 +214,13 @@ class MainWindow(QMainWindow):
             self.addLogMessage("✅ Conversion completed successfully!")
             QMessageBox.information(
                 self,
-                "Success",
-                f"File converted successfully!\n\nOutput saved to:\n{result.output_path}",
+                _("Success"),
+                _("File converted successfully!\n\nOutput saved to:\n%s") % result.output_path,
             )
         else:
             self.addLogMessage(f"❌ Conversion failed: {result.error_message}")
             QMessageBox.critical(
-                self, "Conversion Failed", f"Conversion failed:\n\n{result.error_message}"
+                self, _("Conversion Failed"), _("Conversion failed:\n\n%s") % result.error_message
             )
 
     @Slot()
@@ -227,7 +228,7 @@ class MainWindow(QMainWindow):
         """Handle worker thread completion."""
         # Re-enable convert button
         self.ui.convertButton.setEnabled(True)
-        self.ui.convertButton.setText("Start Conversion")
+        self.ui.convertButton.setText(_("Start Conversion"))
 
         # Clean up worker
         if self.current_worker:
@@ -261,7 +262,7 @@ class MainWindow(QMainWindow):
         """Show about dialog."""
         QMessageBox.about(
             self,
-            "About Pandoc UI",
+            _("About Pandoc UI"),
             """<h3>Pandoc UI v0.1.0</h3>
             <p>A PySide6-based graphical interface for Pandoc document conversion.</p>
             <p>Supports conversion between multiple document formats including:</p>
@@ -283,15 +284,15 @@ class MainWindow(QMainWindow):
         if service.is_pandoc_available():
             pandoc_info = service.get_pandoc_info()
             self.addLogMessage(f"✅ Pandoc detected: {pandoc_info.path} (v{pandoc_info.version})")
-            self.ui.statusLabel.setText("Ready - Pandoc available")
+            self.ui.statusLabel.setText(_("Ready - Pandoc available"))
         else:
             self.addLogMessage("❌ Pandoc not found! Please install Pandoc from https://pandoc.org")
-            self.ui.statusLabel.setText("Pandoc not available")
+            self.ui.statusLabel.setText(_("Pandoc not available"))
 
             # Show warning
             QMessageBox.warning(
                 self,
-                "Pandoc Not Found",
+                _("Pandoc Not Found"),
                 """Pandoc was not found on your system.
 
 Please install Pandoc from:
@@ -306,7 +307,7 @@ The application will not work without Pandoc.""",
         if self.current_worker and self.current_worker.isRunning():
             reply = QMessageBox.question(
                 self,
-                "Conversion in Progress",
+                _("Conversion in Progress"),
                 "A conversion is currently running. Do you want to close anyway?",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No,

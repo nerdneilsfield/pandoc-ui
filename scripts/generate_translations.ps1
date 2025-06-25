@@ -1,5 +1,5 @@
 # Translation generation script for pandoc-ui (PowerShell)
-# Extracts translatable strings and generates .ts/.qm files
+# Extracts strings using xgettext and compiles .po files with msgfmt for gettext system
 
 param(
     [switch]$Force  # Force regeneration even if files exist
@@ -8,151 +8,166 @@ param(
 # Don't exit on error immediately, we'll handle failures
 $ErrorActionPreference = "Continue"
 
-Write-Host "🌍 Generating translations for pandoc-ui..." -ForegroundColor Yellow
-
-# Check if pyside6-lupdate is available
-$PylupdateCmd = ""
-$LreleaseCmd = ""
-if (Get-Command pyside6-lupdate -ErrorAction SilentlyContinue) {
-    $PylupdateCmd = "pyside6-lupdate"
-    $LreleaseCmd = "pyside6-lrelease"
-} elseif (Get-Command uv -ErrorAction SilentlyContinue) {
-    Write-Host "❌ pyside6-lupdate not found. Trying with uv..." -ForegroundColor Yellow
-    $PylupdateCmd = "uv run pyside6-lupdate"
-    $LreleaseCmd = "uv run pyside6-lrelease"
-} else {
-    Write-Host "❌ Neither pyside6-lupdate nor uv found. Please install PySide6." -ForegroundColor Red
+# Check if we're in the project root
+if (!(Test-Path "pyproject.toml")) {
+    Write-Host "❌ Error: Run this script from the project root directory" -ForegroundColor Red
     exit 1
 }
 
-# Create translations directory
-New-Item -ItemType Directory -Force -Path "pandoc_ui\translations" | Out-Null
+Write-Host "🔧 Generating translations for pandoc-ui using gettext..." -ForegroundColor Yellow
 
-# Define supported languages
+# Create locales directory structure if it doesn't exist
+New-Item -ItemType Directory -Force -Path "pandoc_ui\locales" | Out-Null
+
+# Languages to support
 $Languages = @("zh_CN", "ja_JP", "ko_KR", "fr_FR", "de_DE", "es_ES", "zh_TW")
-$LanguageNames = @("简体中文", "日本語", "한국어", "Français", "Deutsch", "Español", "繁體中文")
 
-Write-Host "📝 Extracting translatable strings..." -ForegroundColor Cyan
+# Find all Python files for translation
+Write-Host "📝 Searching for translatable files..." -ForegroundColor Cyan
 
-# Collect all Python files
-$PythonFiles = Get-ChildItem -Path "pandoc_ui" -Filter "*.py" -Recurse | Where-Object { $_.FullName -notlike "*__pycache__*" } | ForEach-Object { $_.FullName }
+# Create a temporary file list
+$FileList = [System.IO.Path]::GetTempFileName()
 
-# Collect all UI files
-$UiFiles = Get-ChildItem -Path "pandoc_ui" -Filter "*.ui" -Recurse | ForEach-Object { $_.FullName }
+# Add all .py files in pandoc_ui (excluding __pycache__ and .pyc)
+Get-ChildItem -Path "pandoc_ui" -Filter "*.py" -Recurse | 
+    Where-Object { $_.FullName -notlike "*__pycache__*" } | 
+    Sort-Object FullName | 
+    ForEach-Object { $_.FullName } | 
+    Out-File -FilePath $FileList -Encoding UTF8
 
-# Combine all source files
-$AllSources = $PythonFiles + $UiFiles
-Write-Host "📊 Found $($AllSources.Count) files to scan" -ForegroundColor Cyan
+$FileCount = (Get-Content $FileList).Count
+Write-Host "📊 Found $FileCount Python files to scan" -ForegroundColor Cyan
 
-# Generate .ts files for each language
-for ($i = 0; $i -lt $Languages.Length; $i++) {
-    $Lang = $Languages[$i]
-    $LangName = $LanguageNames[$i]
-    $TsFile = "pandoc_ui\translations\pandoc_ui_$Lang.ts"
-    
-    Write-Host "🔍 Extracting strings for $Lang..." -ForegroundColor White
-    Write-Host "   Trying pyside6-lupdate..." -ForegroundColor Gray
-    
-    try {
-        if ($PylupdateCmd -eq "pyside6-lupdate") {
-            & pyside6-lupdate -no-obsolete @AllSources -ts $TsFile 2>$null
-        } else {
-            & uv run pyside6-lupdate -no-obsolete @AllSources -ts $TsFile 2>$null
-        }
+# Extract translatable strings using xgettext
+Write-Host "🔍 Extracting translatable strings..." -ForegroundColor Cyan
+$PotFile = "pandoc_ui\locales\pandoc_ui.pot"
+
+# Check if xgettext is available
+if (!(Get-Command xgettext -ErrorAction SilentlyContinue)) {
+    Write-Host "❌ xgettext not found. Please install gettext tools:" -ForegroundColor Red
+    Write-Host "   For Windows: Install gettext-tools from GnuWin32 or use WSL" -ForegroundColor Yellow
+    Write-Host "   For chocolatey: choco install gettext" -ForegroundColor Yellow
+    Write-Host "   For scoop: scoop install gettext" -ForegroundColor Yellow
+    exit 1
+}
+
+# Use xgettext to extract strings from Python files
+try {
+    & xgettext `
+        --language=Python `
+        --keyword=_ `
+        --keyword=ngettext:1,2 `
+        --output="$PotFile" `
+        --from-code=UTF-8 `
+        --add-comments=TRANSLATORS `
+        --copyright-holder="pandoc-ui project" `
+        --package-name="pandoc-ui" `
+        --package-version="1.0" `
+        --msgid-bugs-address="" `
+        --files-from="$FileList"
         
-        if ($LASTEXITCODE -eq 0 -and (Test-Path $TsFile)) {
-            $FileSize = (Get-Item $TsFile).Length
-            if ($FileSize -gt 100) {
-                Write-Host "   ✅ Updated $TsFile ($([math]::Round($FileSize/1KB, 1))KB)" -ForegroundColor Green
-            } else {
-                Write-Host "   ⚠️  Generated $TsFile but it seems empty" -ForegroundColor Yellow
-            }
-        } else {
-            Write-Host "   ❌ pyside6-lupdate failed for $TsFile" -ForegroundColor Red
-            Write-Host "   🔧 Note: lupdate may fail due to segmentation faults" -ForegroundColor Yellow
-        }
-    } catch {
-        Write-Host "   ❌ Error generating $TsFile : $($_.Exception.Message)" -ForegroundColor Red
+    if ($LASTEXITCODE -eq 0 -and (Test-Path $PotFile)) {
+        $StringCount = (Select-String -Path $PotFile -Pattern "^msgid").Count
+        Write-Host "   ✓ Extracted $StringCount translatable strings to $PotFile" -ForegroundColor Green
+    } else {
+        Write-Host "   ❌ Failed to create .pot file" -ForegroundColor Red
+        exit 1
     }
+} catch {
+    Write-Host "   ❌ Error running xgettext: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
 }
 
 Write-Host ""
-Write-Host "🔄 Updating translations from JSON..." -ForegroundColor Cyan
-# Update .ts files with translations from JSON
-if (Test-Path "pandoc_ui\translations\translations.json") {
-    try {
-        if (Get-Command uv -ErrorAction SilentlyContinue) {
-            & uv run python scripts\update_translations.py
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "   ✅ Successfully updated translations from JSON" -ForegroundColor Green
-            } else {
-                Write-Host "   ⚠️  Failed to update translations from JSON" -ForegroundColor Yellow
-            }
-        } else {
-            & python scripts\update_translations.py
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "   ✅ Successfully updated translations from JSON" -ForegroundColor Green
-            } else {
-                Write-Host "   ⚠️  Failed to update translations from JSON" -ForegroundColor Yellow
-            }
-        }
-    } catch {
-        Write-Host "   ⚠️  Error updating translations: $($_.Exception.Message)" -ForegroundColor Yellow
-    }
-} else {
-    Write-Host "   ⚠️  translations.json not found, skipping JSON update" -ForegroundColor Yellow
-}
+Write-Host "📝 Creating/updating .po files for each language..." -ForegroundColor Cyan
 
-Write-Host ""
-Write-Host "⚙️  Compiling .qm files..." -ForegroundColor Cyan
-
-# Compile .ts files to .qm files
+# Create/update .po files for each language
 foreach ($Lang in $Languages) {
-    $TsFile = "pandoc_ui\translations\pandoc_ui_$Lang.ts"
-    $QmFile = "pandoc_ui\translations\pandoc_ui_$Lang.qm"
+    Write-Host "   Processing $Lang..." -ForegroundColor White
     
-    if (Test-Path $TsFile) {
+    # Create directory structure
+    $LangDir = "pandoc_ui\locales\$Lang\LC_MESSAGES"
+    New-Item -ItemType Directory -Force -Path $LangDir | Out-Null
+    
+    $PoFile = "$LangDir\pandoc_ui.po"
+    
+    if (Test-Path $PoFile) {
+        # Update existing .po file
+        Write-Host "     Updating existing $PoFile..." -ForegroundColor Gray
+        try {
+            & msgmerge --update --backup=none "$PoFile" "$PotFile"
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "     ✓ Updated $PoFile" -ForegroundColor Green
+            } else {
+                Write-Host "     ❌ Failed to update $PoFile" -ForegroundColor Red
+                continue
+            }
+        } catch {
+            Write-Host "     ❌ Error updating $PoFile : $($_.Exception.Message)" -ForegroundColor Red
+            continue
+        }
+    } else {
+        # Create new .po file
+        Write-Host "     Creating new $PoFile..." -ForegroundColor Gray
+        try {
+            & msginit --input="$PotFile" --output-file="$PoFile" --locale="$Lang" --no-translator
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "     ✓ Created $PoFile" -ForegroundColor Green
+            } else {
+                Write-Host "     ❌ Failed to create $PoFile" -ForegroundColor Red
+                continue
+            }
+        } catch {
+            Write-Host "     ❌ Error creating $PoFile : $($_.Exception.Message)" -ForegroundColor Red
+            continue
+        }
+    }
+}
+
+Write-Host ""
+Write-Host "⚙️  Compiling .mo files..." -ForegroundColor Cyan
+
+# Compile all .po files to .mo files
+foreach ($Lang in $Languages) {
+    $LangDir = "pandoc_ui\locales\$Lang\LC_MESSAGES"
+    $PoFile = "$LangDir\pandoc_ui.po"
+    $MoFile = "$LangDir\pandoc_ui.mo"
+    
+    if (Test-Path $PoFile) {
         Write-Host "   Compiling $Lang..." -ForegroundColor White
         
         try {
-            if ($LreleaseCmd -eq "pyside6-lrelease") {
-                & pyside6-lrelease $TsFile -qm $QmFile 2>$null
-            } else {
-                & uv run pyside6-lrelease $TsFile -qm $QmFile 2>$null
-            }
+            & msgfmt --output-file="$MoFile" "$PoFile"
             
-            if ($LASTEXITCODE -eq 0 -and (Test-Path $QmFile)) {
-                Write-Host "   ✅ Generated $QmFile" -ForegroundColor Green
+            if ($LASTEXITCODE -eq 0 -and (Test-Path $MoFile)) {
+                Write-Host "   ✓ Generated $MoFile" -ForegroundColor Green
             } else {
-                Write-Host "   ❌ Failed to generate $QmFile" -ForegroundColor Red
-                # Try fallback with system lrelease if available
-                if (Get-Command lrelease -ErrorAction SilentlyContinue) {
-                    Write-Host "   Trying system lrelease..." -ForegroundColor Yellow
-                    & lrelease $TsFile -qm $QmFile
-                    if ($LASTEXITCODE -eq 0 -and (Test-Path $QmFile)) {
-                        Write-Host "   ✅ Generated $QmFile with system lrelease" -ForegroundColor Green
-                    }
-                }
+                Write-Host "   ❌ Failed to generate $MoFile" -ForegroundColor Red
             }
         } catch {
-            Write-Host "   ❌ Error compiling $QmFile : $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "   ❌ Error compiling $MoFile : $($_.Exception.Message)" -ForegroundColor Red
         }
     } else {
-        Write-Host "   ⚠️  Skipping $TsFile (not found)" -ForegroundColor Yellow
+        Write-Host "   ⚠️  Skipping $Lang (no .po file found)" -ForegroundColor Yellow
     }
 }
 
 Write-Host ""
-Write-Host "✅ Translation files generated!" -ForegroundColor Green
+Write-Host "✅ Translation files generated using gettext!" -ForegroundColor Green
 Write-Host ""
 Write-Host "📝 Next steps:" -ForegroundColor White
-Write-Host "1. Edit pandoc_ui\translations\translations.json to add/update translations" -ForegroundColor Cyan
-Write-Host "2. Run this script again to apply translations and compile .qm files" -ForegroundColor Cyan
-Write-Host "3. Or use Qt Linguist for visual editing of .ts files" -ForegroundColor Cyan
+Write-Host "1. Edit .po files in pandoc_ui\locales\*\LC_MESSAGES\ to add/update translations" -ForegroundColor Cyan
+Write-Host "2. Run this script again to compile updated .mo files" -ForegroundColor Cyan
+Write-Host "3. Or use a .po editor like Poedit for visual editing" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Generated files:" -ForegroundColor White
 foreach ($Lang in $Languages) {
-    Write-Host "  - pandoc_ui\translations\pandoc_ui_$Lang.ts (source)" -ForegroundColor Gray
-    Write-Host "  - pandoc_ui\translations\pandoc_ui_$Lang.qm (compiled)" -ForegroundColor Gray
+    Write-Host "  - pandoc_ui\locales\$Lang\LC_MESSAGES\pandoc_ui.po (source)" -ForegroundColor Gray
+    Write-Host "  - pandoc_ui\locales\$Lang\LC_MESSAGES\pandoc_ui.mo (compiled)" -ForegroundColor Gray
 }
+
+# Clean up temporary files
+Remove-Item -Path $FileList -Force -ErrorAction SilentlyContinue
+
 Write-Host ""
+Write-Host "🌍 Translation system successfully migrated to gettext!" -ForegroundColor Green

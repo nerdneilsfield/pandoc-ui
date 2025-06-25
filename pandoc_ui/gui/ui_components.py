@@ -33,7 +33,7 @@ from ..app.task_queue import TaskQueue
 from ..infra.config_manager import initialize_config
 from ..infra.format_manager import FormatManager
 from ..infra.settings_store import Language, SettingsStore
-from ..infra.translation_manager import get_translation_manager
+from ..i18n import _, get_current_language
 from ..models import ConversionProfile, ConversionResult, InputFormat, OutputFormat
 from .conversion_worker import ConversionWorker
 
@@ -126,14 +126,16 @@ class MainWindowUI(QObject):
             # Initialize profile management UI
             self.initializeProfileUI()
             
+            # Apply initial translations to UI
+            logger.info("Applying initial translations to UI")
+            self.retranslateUi()
+            
             # Check if we need to retranslate UI after automatic language detection
-            from ..infra.translation_manager import get_translation_manager
-            translation_manager = get_translation_manager()
-            current_lang = translation_manager.get_current_language()
+            current_lang = get_current_language()
             
             # If the current language is not English, retranslate the UI
-            if current_lang.code != 'en_US':
-                logger.info(f"Retranslating UI for detected language: {current_lang.native_name}")
+            if current_lang != 'en':
+                logger.info(f"Retranslating UI for detected language: {current_lang}")
                 self.retranslateUi()
             
             logger.info("Profile UI initialized")
@@ -1186,23 +1188,21 @@ class MainWindowUI(QObject):
             pandoc_info = service.get_pandoc_info()
             
             # Get current language for logging
-            from ..infra.translation_manager import get_translation_manager
-            translation_manager = get_translation_manager()
-            current_lang = translation_manager.get_current_language()
+            current_lang = get_current_language()
             
             self.addLogMessage(f"✅ Pandoc detected: {pandoc_info.path} (v{pandoc_info.version})")
-            self.addLogMessage(f"🌍 System language detected: {current_lang.native_name} ({current_lang.code})")
+            self.addLogMessage(f"🌍 System language detected: {current_lang}")
             
             # Safely set status label if it exists
             if hasattr(self.ui, 'statusLabel'):
                 # Use translation function for status
-                status_text = self.tr("Ready - Pandoc available")
+                status_text = _("Ready - Pandoc available")
                 self.ui.statusLabel.setText(status_text)
         else:
             self.addLogMessage("❌ Pandoc not found! Please install Pandoc from https://pandoc.org")
             # Safely set status label if it exists
             if hasattr(self.ui, 'statusLabel'):
-                status_text = self.tr("Pandoc not available")
+                status_text = _("Pandoc not available")
                 self.ui.statusLabel.setText(status_text)
 
             # Show warning
@@ -1258,7 +1258,7 @@ The application will not work without Pandoc.""",
 
         # Get profile name from user
         name, ok = QInputDialog.getText(
-            self.main_window, "Save Profile", "Enter profile name:", text="My Configuration"
+            self.main_window, _("Save Profile"), _("Enter profile name:"), text=_("My Configuration")
         )
 
         if not ok or not name.strip():
@@ -1270,8 +1270,8 @@ The application will not work without Pandoc.""",
         if self.profile_repository.profile_exists(name):
             reply = QMessageBox.question(
                 self.main_window,
-                "Profile Exists",
-                f"Profile '{name}' already exists. Overwrite?",
+                _("Profile Exists"),
+                _("Profile '%s' already exists. Overwrite?") % name,
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No,
             )
@@ -1293,16 +1293,16 @@ The application will not work without Pandoc.""",
             if index >= 0:
                 self.ui.profileComboBox.setCurrentIndex(index)
         else:
-            QMessageBox.critical(self.main_window, "Save Error", f"Failed to save profile '{name}'")
+            QMessageBox.critical(self.main_window, _("Save Error"), _("Failed to save profile '%s'") % name)
 
     @Slot()
     def loadProfile(self):
         """Load selected profile configuration."""
         profile_display = self.ui.profileComboBox.currentText()
 
-        if not profile_display or profile_display == "-- Select Profile --":
+        if not profile_display or profile_display == _("-- Select Profile --"):
             QMessageBox.information(
-                self.main_window, "No Profile Selected", "Please select a profile to load"
+                self.main_window, _("No Profile Selected"), _("Please select a profile to load")
             )
             return
 
@@ -1319,7 +1319,7 @@ The application will not work without Pandoc.""",
             self.addLogMessage(f"📁 Profile '{profile_name}' loaded successfully")
         else:
             QMessageBox.critical(
-                self.main_window, "Load Error", f"Failed to load profile '{profile_name}'"
+                self.main_window, _("Load Error"), _("Failed to load profile '%s'") % profile_name
             )
             self.refreshProfileList()  # Refresh in case profile was deleted
 
@@ -1328,9 +1328,9 @@ The application will not work without Pandoc.""",
         """Delete selected profile."""
         profile_display = self.ui.profileComboBox.currentText()
 
-        if not profile_display or profile_display == "-- Select Profile --":
+        if not profile_display or profile_display == _("-- Select Profile --"):
             QMessageBox.information(
-                self.main_window, "No Profile Selected", "Please select a profile to delete"
+                self.main_window, _("No Profile Selected"), _("Please select a profile to delete")
             )
             return
 
@@ -1342,8 +1342,8 @@ The application will not work without Pandoc.""",
 
         reply = QMessageBox.question(
             self.main_window,
-            "Delete Profile",
-            f"Are you sure you want to delete profile '{profile_name}'?",
+            _("Delete Profile"),
+            _("Are you sure you want to delete profile '%s'?") % profile_name,
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -1354,25 +1354,23 @@ The application will not work without Pandoc.""",
                 self.refreshProfileList()
             else:
                 QMessageBox.critical(
-                    self.main_window, "Delete Error", f"Failed to delete profile '{profile_name}'"
+                    self.main_window, _("Delete Error"), _("Failed to delete profile '%s'") % profile_name
                 )
 
     @Slot(str)
     def onProfileSelected(self, profile_name: str):
         """Handle profile selection change."""
         # Enable/disable buttons based on selection
-        has_selection = profile_name and profile_name != "-- Select Profile --"
+        has_selection = profile_name and profile_name != _("-- Select Profile --")
         self.ui.loadProfileButton.setEnabled(has_selection)
         self.ui.deleteProfileButton.setEnabled(has_selection)
 
     @Slot(str)
     def onLanguageChanged(self, language_text: str):
         """Handle language selection change."""
-        from ..infra.translation_manager import Language as TranslationLanguage
-        
         # Map UI language text to translation language codes
         language_map = {
-            "English": "en_US",
+            "English": "en",
             "简体中文": "zh_CN", 
             "繁體中文": "zh_TW",
             "日本語": "ja_JP",
@@ -1380,7 +1378,6 @@ The application will not work without Pandoc.""",
             "Français": "fr_FR",
             "Deutsch": "de_DE",
             "한국어": "ko_KR",
-            "Русский": "ru_RU",
         }
         
         # Map to settings language enum
@@ -1393,7 +1390,6 @@ The application will not work without Pandoc.""",
             "Français": Language.FRENCH,
             "Deutsch": Language.GERMAN,
             "한국어": Language.KOREAN,
-            "Русский": Language.ENGLISH,  # Fallback for now
         }
 
         language_code = language_map.get(language_text)
@@ -1403,46 +1399,30 @@ The application will not work without Pandoc.""",
             self.addLogMessage(f"⚠️ Language '{language_text}' not yet supported")
             return
 
-        # Get translation manager and switch language
-        translation_manager = get_translation_manager()
+        # Switch to the new language using gettext
+        from ..i18n import setup_translation
+        success = setup_translation(language_code)
         
-        # Find the corresponding TranslationLanguage enum
-        target_language = None
-        for lang in TranslationLanguage:
-            if lang.value[0] == language_code:  # lang.value is (code, name, english_name)
-                target_language = lang
-                break
-        
-        if target_language:
-            success = translation_manager.set_language(target_language)
-            if success:
-                # Update settings
-                self.settings_store.update_setting("language", settings_language.value)
-                self.addLogMessage(f"🌐 Language changed to {language_text}")
-                
-                # Update UI text with new translations
-                self.retranslateUi()
-                
-                # Show confirmation with translated text
-                QMessageBox.information(
-                    self.main_window,
-                    "Language Changed",
-                    f"Language changed to {language_text}.\n"
-                    "UI text has been updated to reflect the new language.",
-                )
-            else:
-                self.addLogMessage(f"❌ Failed to switch to {language_text}")
-                QMessageBox.warning(
-                    self.main_window,
-                    "Language Switch Failed", 
-                    f"Failed to switch to {language_text}. Translation files may be missing."
-                )
+        if success:
+            # Update settings
+            self.settings_store.update_setting("language", settings_language.value)
+            self.addLogMessage(f"🌐 Language changed to {language_text}")
+            
+            # Update UI text with new translations
+            self.retranslateUi()
+            
+            # Show confirmation with translated text
+            QMessageBox.information(
+                self.main_window,
+                _("Language Changed"),
+                _("Language changed to %s.\nUI text has been updated to reflect the new language.") % language_text,
+            )
         else:
-            self.addLogMessage(f"❌ Language code '{language_code}' not found")
+            self.addLogMessage(f"❌ Failed to switch to {language_text}")
             QMessageBox.warning(
                 self.main_window,
-                "Language Not Supported",
-                f"Language '{language_text}' is not yet supported."
+                _("Language Switch Failed"), 
+                _("Failed to switch to %s. Translation files may be missing.") % language_text
             )
 
     def collectUIState(self) -> dict:
@@ -1502,7 +1482,7 @@ The application will not work without Pandoc.""",
 
         # Clear and repopulate
         self.ui.profileComboBox.clear()
-        self.ui.profileComboBox.addItem("-- Select Profile --")
+        self.ui.profileComboBox.addItem(_("-- Select Profile --"))
 
         # Get profiles sorted by modification time
         profiles = self.profile_repository.list_profiles()
@@ -1527,30 +1507,29 @@ The application will not work without Pandoc.""",
 
         # Initialize language dropdown with all supported languages
         if hasattr(self.ui, "languageComboBox"):
-            from ..infra.translation_manager import Language as TranslationLanguage, get_translation_manager
+            from ..i18n import list_available_languages, get_language_name
             
             # Clear existing items and add all supported languages
             self.ui.languageComboBox.clear()
             
-            # Get translation manager to find current language
-            translation_manager = get_translation_manager()
-            current_lang = translation_manager.get_current_language()
+            # Get current language
+            current_lang = get_current_language()
             
-            # Add all supported languages and track the current one
+            # Add all available languages
+            available_languages = list_available_languages()
             current_index = 0
-            for i, lang in enumerate(TranslationLanguage):
-                # For now, only show languages that we have some translation support for
-                if lang.code in ['en_US', 'zh_CN', 'ja_JP', 'zh_TW', 'es_ES', 'fr_FR', 'de_DE']:
-                    self.ui.languageComboBox.addItem(lang.native_name)
-                    # Check if this is the current language
-                    if lang == current_lang:
-                        current_index = self.ui.languageComboBox.count() - 1
+            
+            for i, (lang_code, lang_name) in enumerate(available_languages.items()):
+                self.ui.languageComboBox.addItem(lang_name)
+                # Check if this is the current language
+                if lang_code == current_lang:
+                    current_index = i
             
             # Set the current detected/loaded language
             self.ui.languageComboBox.setCurrentIndex(current_index)
             
             # Log the detected language
-            logger.info(f"Language dropdown initialized with current language: {current_lang.native_name}")
+            logger.info(f"Language dropdown initialized with current language: {get_language_name()}")
 
     # Command Preview Methods
     @Slot(str)
@@ -1611,7 +1590,7 @@ The application will not work without Pandoc.""",
         elif not self.is_batch_mode and self.input_file_path:
             return "Command for single file conversion:"
         else:
-            return "Preview of pandoc command that will be executed:"
+            return _("Preview of pandoc command that will be executed:")
 
     def _buildPreviewCommand(self) -> str:
         """Build preview command string."""
@@ -1738,136 +1717,116 @@ The application will not work without Pandoc.""",
         return format_extensions.get(format_data, format_data)
 
     def retranslateUi(self):
-        """Update UI text after language change."""
-        from ..infra.translation_manager import tr, get_translation_manager
-        
-        # Get current language for fallback translations
-        translation_manager = get_translation_manager()
-        current_lang = translation_manager.get_current_language()
-        is_chinese = current_lang and current_lang.value[0] == "zh_CN"
-        is_japanese = current_lang and current_lang.value[0] == "ja_JP"
-        
-        # Fallback translation function for UI elements not yet in .ts files
-        def get_text(english, chinese="", chinese_tw="", japanese="", spanish="", french="", german=""):
-            current_code = current_lang.value[0] if current_lang else "en_US"
-            
-            if current_code == "zh_CN" and chinese:
-                return chinese
-            elif current_code == "zh_TW" and (chinese_tw or chinese):
-                return chinese_tw or chinese  # Fallback to simplified if traditional not available
-            elif current_code == "ja_JP" and japanese:
-                return japanese
-            elif current_code == "es_ES" and spanish:
-                return spanish
-            elif current_code == "fr_FR" and french:
-                return french
-            elif current_code == "de_DE" and german:
-                return german
-            return english
+        """Update UI text after language change using gettext translations."""
         
         try:
             # Update window title
-            self.main_window.setWindowTitle(get_text(
-                "Pandoc UI - Document Converter", 
-                "Pandoc UI - 文档转换器", 
-                "Pandoc UI - 文件轉換器",
-                "Pandoc UI - ドキュメントコンバーター",
-                "Pandoc UI - Conversor de Documentos",
-                "Pandoc UI - Convertisseur de Documents",
-                "Pandoc UI - Dokumentkonverter"
-            ))
+            self.main_window.setWindowTitle(_("Pandoc UI - Document Converter"))
             
             # Update group box titles
             if hasattr(self.ui, "inputGroupBox"):
-                self.ui.inputGroupBox.setTitle(get_text(
-                    "Input Selection", "输入选择", "輸入選擇", "入力選択", 
-                    "Selección de Entrada", "Sélection d'Entrée", "Eingabeauswahl"
-                ))
+                self.ui.inputGroupBox.setTitle(_("Input Selection"))
             if hasattr(self.ui, "outputGroupBox"):
-                self.ui.outputGroupBox.setTitle(get_text(
-                    "Output Settings", "输出设置", "輸出設定", "出力設定",
-                    "Configuración de Salida", "Paramètres de Sortie", "Ausgabeeinstellungen"
-                ))
+                self.ui.outputGroupBox.setTitle(_("Output Settings"))
+            if hasattr(self.ui, "batchOptionsGroupBox"):
+                self.ui.batchOptionsGroupBox.setTitle(_("Batch Options"))
             if hasattr(self.ui, "commandPreviewGroupBox"):
-                self.ui.commandPreviewGroupBox.setTitle(tr("Command Preview"))  # Use existing translation
+                self.ui.commandPreviewGroupBox.setTitle(_("Command Preview"))
             if hasattr(self.ui, "customArgsGroupBox"):
-                self.ui.customArgsGroupBox.setTitle(tr("Custom Arguments"))  # Use existing translation
+                self.ui.customArgsGroupBox.setTitle(_("Custom Arguments"))
             if hasattr(self.ui, "progressGroupBox"):
-                self.ui.progressGroupBox.setTitle(get_text("Progress", "进度", "進捗"))
+                self.ui.progressGroupBox.setTitle(_("Progress"))
             if hasattr(self.ui, "logGroupBox"):
-                self.ui.logGroupBox.setTitle(get_text("Log Output", "日志输出", "ログ出力"))
+                self.ui.logGroupBox.setTitle(_("Log Output"))
             if hasattr(self.ui, "profileGroupBox"):
-                self.ui.profileGroupBox.setTitle(get_text("Configuration Profiles", "配置文件", "設定プロファイル"))
+                self.ui.profileGroupBox.setTitle(_("Configuration Profiles"))
             
             # Update radio buttons
             if hasattr(self.ui, "singleFileModeRadio"):
-                self.ui.singleFileModeRadio.setText(get_text("Single File", "单个文件", "単一ファイル"))
+                self.ui.singleFileModeRadio.setText(_("Single File"))
             if hasattr(self.ui, "folderModeRadio"):
-                self.ui.folderModeRadio.setText(get_text("Folder (Batch)", "文件夹（批量）", "フォルダ（バッチ）"))
+                self.ui.folderModeRadio.setText(_("Folder (Batch)"))
             
-            # Update labels
+            # Update labels 
             if hasattr(self.ui, "outputLabel"):
-                self.ui.outputLabel.setText(get_text("Output Format:", "输出格式：", "出力形式："))
+                self.ui.outputLabel.setText(_("Output Format:"))
             if hasattr(self.ui, "outputDirLabel"):
-                self.ui.outputDirLabel.setText(get_text("Output Directory:", "输出目录：", "出力ディレクトリ："))
+                self.ui.outputDirLabel.setText(_("Output Directory:"))
+            if hasattr(self.ui, "extensionFilterLabel"):
+                self.ui.extensionFilterLabel.setText(_("File Extensions:"))
+            if hasattr(self.ui, "scanModeLabel"):
+                self.ui.scanModeLabel.setText(_("Scan Mode:"))
+            if hasattr(self.ui, "maxFilesLabel"):
+                self.ui.maxFilesLabel.setText(_("Max Files:"))
+            if hasattr(self.ui, "languageLabel"):
+                self.ui.languageLabel.setText(_("Language:"))
             if hasattr(self.ui, "commandInfoLabel"):
-                self.ui.commandInfoLabel.setText(tr("Preview of pandoc command that will be executed:"))
+                self.ui.commandInfoLabel.setText(_("Preview of pandoc command that will be executed:"))
             if hasattr(self.ui, "customArgsHelpLabel"):
-                self.ui.customArgsHelpLabel.setText(tr("Add custom pandoc arguments (e.g., --metadata title=\"My Title\" --toc):"))
+                self.ui.customArgsHelpLabel.setText(_("Add custom pandoc arguments (e.g., --metadata title=\"My Title\" --toc):"))
             
             # Update buttons
             if hasattr(self.ui, "browseInputButton"):
-                if self.is_batch_mode:
-                    self.ui.browseInputButton.setText(get_text("Browse Folder...", "浏览文件夹...", "フォルダを参照..."))
-                else:
-                    self.ui.browseInputButton.setText(get_text("Browse File...", "浏览文件...", "ファイルを参照..."))
+                self.ui.browseInputButton.setText(_("Select input file or folder to convert..."))
             if hasattr(self.ui, "browseOutputButton"):
-                self.ui.browseOutputButton.setText(get_text("Browse...", "浏览...", "参照..."))
+                self.ui.browseOutputButton.setText(_("Select input file or folder to convert..."))
             if hasattr(self.ui, "convertButton"):
-                if self.is_batch_mode:
-                    self.ui.convertButton.setText(get_text("Start Batch Conversion", "开始批量转换", "バッチ変換開始"))
-                else:
-                    self.ui.convertButton.setText(get_text("Start Conversion", "开始转换", "変換開始"))
+                self.ui.convertButton.setText(_("Start Conversion"))
             if hasattr(self.ui, "clearLogButton"):
-                self.ui.clearLogButton.setText(get_text("Clear Log", "清除日志", "ログクリア"))
+                self.ui.clearLogButton.setText(_("Clear Log"))
             if hasattr(self.ui, "clearArgsButton"):
-                self.ui.clearArgsButton.setText(tr("Clear"))  # Use existing translation
+                self.ui.clearArgsButton.setText(_("Clear custom arguments"))
             if hasattr(self.ui, "saveProfileButton"):
-                self.ui.saveProfileButton.setText(get_text("Save Snapshot", "保存快照", "スナップショット保存"))
+                self.ui.saveProfileButton.setText(_("Save Snapshot"))
             if hasattr(self.ui, "loadProfileButton"):
-                self.ui.loadProfileButton.setText(get_text("Load Snapshot", "加载快照", "スナップショット読込"))
+                self.ui.loadProfileButton.setText(_("Load Snapshot"))
             if hasattr(self.ui, "deleteProfileButton"):
-                self.ui.deleteProfileButton.setText(get_text("Delete", "删除", "削除"))
+                self.ui.deleteProfileButton.setText(_("Delete selected profile"))
+            
+            # Update ComboBox items
+            if hasattr(self.ui, "scanModeComboBox"):
+                # Save current index
+                current_index = self.ui.scanModeComboBox.currentIndex()
+                self.ui.scanModeComboBox.clear()
+                self.ui.scanModeComboBox.addItem(_("Recursive (All Subfolders)"))
+                self.ui.scanModeComboBox.addItem(_("Single Level Only"))
+                # Restore selection
+                if current_index >= 0:
+                    self.ui.scanModeComboBox.setCurrentIndex(current_index)
             
             # Update placeholders
             if hasattr(self.ui, "inputPathEdit"):
-                if self.is_batch_mode:
-                    self.ui.inputPathEdit.setPlaceholderText(get_text("Select folder for batch conversion...", "选择批量转换的文件夹...", "バッチ変換用フォルダを選択..."))
-                else:
-                    self.ui.inputPathEdit.setPlaceholderText(get_text("Select input file to convert...", "选择要转换的输入文件...", "変換する入力ファイルを選択..."))
+                self.ui.inputPathEdit.setPlaceholderText(_("Select input file or folder to convert..."))
             if hasattr(self.ui, "outputDirEdit"):
-                self.ui.outputDirEdit.setPlaceholderText(get_text("Output directory (leave empty for same as input)", "输出目录（留空则与输入相同）", "出力ディレクトリ（空白で入力と同じ）"))
+                self.ui.outputDirEdit.setPlaceholderText(_("Output directory (leave empty for same as input)"))
             if hasattr(self.ui, "customArgsEdit"):
-                self.ui.customArgsEdit.setPlaceholderText(tr("Enter custom pandoc arguments..."))
+                self.ui.customArgsEdit.setPlaceholderText(_("Enter custom pandoc arguments..."))
             if hasattr(self.ui, "extensionFilterEdit"):
-                self.ui.extensionFilterEdit.setPlaceholderText(get_text(".md, .rst, .txt (leave empty for auto-detect)", ".md, .rst, .txt（留空自动检测）", ".md, .rst, .txt（空白で自動検出）"))
+                self.ui.extensionFilterEdit.setPlaceholderText(_(".md,.rst,.txt (leave empty for auto-detect)"))
             
             # Update tooltips
             if hasattr(self.ui, "customArgsEdit"):
-                self.ui.customArgsEdit.setToolTip(tr("Additional arguments to append to the pandoc command"))
+                self.ui.customArgsEdit.setToolTip(_("Additional arguments to append to the pandoc command"))
             if hasattr(self.ui, "clearArgsButton"):
-                self.ui.clearArgsButton.setToolTip(tr("Clear custom arguments"))
+                self.ui.clearArgsButton.setToolTip(_("Clear custom arguments"))
             
             # Update status text
             if hasattr(self.ui, "statusLabel"):
                 current_status = self.ui.statusLabel.text()
-                if "Ready" in current_status:
-                    self.ui.statusLabel.setText(get_text("Ready - Pandoc available", "就绪 - Pandoc可用", "準備完了 - Pandoc利用可能"))
+                if "Ready" in current_status or "Pandoc available" in current_status:
+                    self.ui.statusLabel.setText(_("Ready - Pandoc available"))
+                elif "Pandoc not available" in current_status:
+                    self.ui.statusLabel.setText(_("Pandoc not available"))
                     
             # Update command preview
             self.updateCommandPreview()
             
-            logger.info(f"UI retranslated successfully")
+            # Update copyright in status bar
+            if hasattr(self.main_window, "statusBar"):
+                copyright_text = "© 2025 Pandoc UI | MIT License"
+                self.main_window.statusBar().showMessage(copyright_text)
+            
+            logger.info("UI retranslated successfully using gettext")
             
         except Exception as e:
             logger.error(f"Error during UI retranslation: {e}", exc_info=True)

@@ -1,0 +1,153 @@
+# Translation file for pandoc-ui
+# Copyright (C) 2025 pandoc-ui project
+# This file is distributed under the same license as the pandoc-ui package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: pandoc-ui 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-26 01:19\n"
+"PO-Revision-Date: 2025-06-26 01:19\n"
+"Last-Translator: \n"
+"Language-Team: Français\n"
+"Language: fr_FR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "# No conversion profile or files selected"
+msgstr "# Aucun profil de conversion ou fichier sélectionné"
+
+msgid ".md,.rst,.txt (leave empty for auto-detect)"
+msgstr ".md,.rst,.txt (laisser vide pour auto-détecter)"
+
+msgid "Add custom pandoc arguments (e.g., --metadata title=\"My Title\" --toc):"
+msgstr "Ajouter des arguments pandoc personnalisés (ex: --metadata title=\"Mon Titre\" --toc):"
+
+msgid "Additional arguments to append to the pandoc command"
+msgstr "Arguments supplémentaires à ajouter à la commande pandoc"
+
+msgid "Batch Options"
+msgstr "Options de lot"
+
+msgid "Clear Log"
+msgstr "Effacer le log"
+
+msgid "Clear custom arguments"
+msgstr "Effacer les arguments personnalisés"
+
+msgid "Command Preview"
+msgstr "Aperçu de la commande"
+
+msgid "Command for single file conversion:"
+msgstr "Commande pour conversion de fichier unique:"
+
+msgid "Configuration Profiles"
+msgstr "Profils de configuration"
+
+msgid "Custom Arguments"
+msgstr "Arguments personnalisés"
+
+msgid "Delete selected profile"
+msgstr "Supprimer le profil sélectionné"
+
+msgid "Enter custom pandoc arguments..."
+msgstr "Entrer des arguments pandoc personnalisés..."
+
+msgid "Error generating command preview"
+msgstr "Erreur lors de la génération de l'aperçu de commande"
+
+msgid "File Extensions:"
+msgstr "Extensions de fichier:"
+
+msgid "Folder (Batch)"
+msgstr "Dossier (Lot)"
+
+msgid "Input Selection"
+msgstr "Sélection d'entrée"
+
+msgid "Invalid argument format: %s"
+msgstr "Format d'argument invalide: %s"
+
+msgid "Language:"
+msgstr "Langue:"
+
+msgid "Load Snapshot"
+msgstr "Charger l'instantané"
+
+msgid "Load selected profile configuration"
+msgstr "Charger la configuration du profil sélectionné"
+
+msgid "Log Output"
+msgstr "Sortie de log"
+
+msgid "Max Files:"
+msgstr "Fichiers max:"
+
+msgid "No files selected."
+msgstr "Aucun fichier sélectionné."
+
+msgid "Output Directory:"
+msgstr "Répertoire de sortie:"
+
+msgid "Output Format:"
+msgstr "Format de sortie:"
+
+msgid "Output Settings"
+msgstr "Paramètres de sortie"
+
+msgid "Output directory (leave empty for same as input)"
+msgstr "Répertoire de sortie (laisser vide pour identique à l'entrée)"
+
+msgid "Pandoc UI - Document Converter"
+msgstr "Pandoc UI - Convertisseur de documents"
+
+msgid "Pandoc not available"
+msgstr "Pandoc non disponible"
+
+msgid "Preview of pandoc command that will be executed:"
+msgstr "Aperçu de la commande pandoc qui sera exécutée:"
+
+msgid "Progress"
+msgstr "Progrès"
+
+msgid "Ready - Pandoc available"
+msgstr "Prêt - Pandoc disponible"
+
+msgid "Recursive (All Subfolders)"
+msgstr "Récursif (Tous les sous-dossiers)"
+
+msgid "Sample command for batch conversion (%d files):"
+msgstr "Exemple de commande pour conversion par lot (%d fichiers):"
+
+msgid "Save Snapshot"
+msgstr "Sauvegarder l'instantané"
+
+msgid "Save current configuration as a profile"
+msgstr "Sauvegarder la configuration actuelle comme profil"
+
+msgid "Scan Mode:"
+msgstr "Mode de scan:"
+
+msgid "Select a saved configuration profile"
+msgstr "Sélectionner un profil de configuration sauvegardé"
+
+msgid "Select input file or folder to convert..."
+msgstr "Sélectionner le fichier ou dossier d'entrée à convertir..."
+
+msgid "Select interface language"
+msgstr "Sélectionner la langue de l'interface"
+
+msgid "Single File"
+msgstr "Fichier unique"
+
+msgid "Single Level Only"
+msgstr "Un seul niveau"
+
+msgid "Start Conversion"
+msgstr "Démarrer la conversion"
+
+msgid "This command will be executed for each of the %d selected files"
+msgstr "Cette commande sera exécutée pour chacun des %d fichiers sélectionnés"
+

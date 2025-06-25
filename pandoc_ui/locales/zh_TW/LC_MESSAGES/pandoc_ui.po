@@ -1,0 +1,159 @@
+# Translation file for pandoc-ui
+# Copyright (C) 2025 pandoc-ui project
+# This file is distributed under the same license as the pandoc-ui package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: pandoc-ui 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-26 01:19\n"
+"PO-Revision-Date: 2025-06-26 01:19\n"
+"Last-Translator: \n"
+"Language-Team: 繁體中文\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "# No conversion profile or files selected"
+msgstr "# 未選擇轉換設定檔或檔案"
+
+msgid ".md,.rst,.txt (leave empty for auto-detect)"
+msgstr ".md,.rst,.txt（留空自動偵測）"
+
+msgid "Add custom pandoc arguments (e.g., --metadata title=\"My Title\" --toc):"
+msgstr "新增自訂pandoc參數（例如：--metadata title=\"我的標題\" --toc）："
+
+msgid "Additional arguments to append to the pandoc command"
+msgstr "附加到pandoc命令的額外參數"
+
+msgid "Batch Options"
+msgstr "批次選項"
+
+msgid "Clear Log"
+msgstr "清除日誌"
+
+msgid "Clear custom arguments"
+msgstr "清除自訂參數"
+
+msgid "Command Preview"
+msgstr "命令預覽"
+
+msgid "Command for single file conversion:"
+msgstr "單一檔案轉換命令："
+
+msgid "Configuration Profiles"
+msgstr "設定檔"
+
+msgid "Custom Arguments"
+msgstr "自訂參數"
+
+msgid "Delete selected profile"
+msgstr "刪除選定的設定檔"
+
+msgid "Enter custom pandoc arguments..."
+msgstr "輸入自訂pandoc參數..."
+
+msgid "Error generating command preview"
+msgstr "產生命令預覽時發生錯誤"
+
+msgid "File Extensions:"
+msgstr "檔案副檔名："
+
+msgid "Folder (Batch)"
+msgstr "資料夾（批次）"
+
+msgid "Input Selection"
+msgstr "輸入選擇"
+
+msgid "Invalid argument format: %s"
+msgstr "無效的參數格式：%s"
+
+msgid "Invalid argument format: {e}"
+msgstr "無效的參數格式：{e}"
+
+msgid "Language:"
+msgstr "語言："
+
+msgid "Load Snapshot"
+msgstr "載入快照"
+
+msgid "Load selected profile configuration"
+msgstr "載入選定的設定檔"
+
+msgid "Log Output"
+msgstr "日誌輸出"
+
+msgid "Max Files:"
+msgstr "最大檔案數："
+
+msgid "No files selected."
+msgstr "未選擇檔案。"
+
+msgid "Output Directory:"
+msgstr "輸出目錄："
+
+msgid "Output Format:"
+msgstr "輸出格式："
+
+msgid "Output Settings"
+msgstr "輸出設定"
+
+msgid "Output directory (leave empty for same as input)"
+msgstr "輸出目錄（留空則與輸入相同）"
+
+msgid "Pandoc UI - Document Converter"
+msgstr "Pandoc UI - 文件轉換器"
+
+msgid "Pandoc not available"
+msgstr "Pandoc不可用"
+
+msgid "Preview of pandoc command that will be executed:"
+msgstr "將要執行的pandoc命令預覽："
+
+msgid "Progress"
+msgstr "進度"
+
+msgid "Ready - Pandoc available"
+msgstr "就緒 - Pandoc可用"
+
+msgid "Recursive (All Subfolders)"
+msgstr "遞迴（所有子資料夾）"
+
+msgid "Sample command for batch conversion (%d files):"
+msgstr "批次轉換範例命令（%d個檔案）："
+
+msgid "Sample command for batch conversion ({len(self.current_input_files)} files):"
+msgstr "批次轉換範例命令（{len(self.current_input_files)}個檔案）："
+
+msgid "Save Snapshot"
+msgstr "儲存快照"
+
+msgid "Save current configuration as a profile"
+msgstr "將目前設定儲存為設定檔"
+
+msgid "Scan Mode:"
+msgstr "掃描模式："
+
+msgid "Select a saved configuration profile"
+msgstr "選擇已儲存的設定檔"
+
+msgid "Select input file or folder to convert..."
+msgstr "選擇要轉換的輸入檔案或資料夾..."
+
+msgid "Select interface language"
+msgstr "選擇介面語言"
+
+msgid "Single File"
+msgstr "單一檔案"
+
+msgid "Single Level Only"
+msgstr "僅單層"
+
+msgid "Start Conversion"
+msgstr "開始轉換"
+
+msgid "This command will be executed for each of the %d selected files"
+msgstr "此命令將對 %d 個選取的檔案分別執行"
+

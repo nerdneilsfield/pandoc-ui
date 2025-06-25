@@ -1,5 +1,92 @@
 # Claude Development Log
 
+## 2025-06-26-01:25 - Complete Migration from Qt i18n to Python Gettext System
+
+### Task
+Complete migration from Qt's i18n system to Python's gettext system, fix all remaining hardcoded text in the interface, add copyright information, and update translation generation scripts.
+
+### Implementation
+
+#### 🔧 Hardcoded Text Resolution
+- **UI Component Translation Fixes:**
+  - Fixed all hardcoded English and Chinese text in `pandoc_ui/gui/ui_components.py`
+  - Updated `retranslateUi()` method to use only gettext `_()` calls instead of mixed translation methods
+  - Added comprehensive translation coverage for all UI components including batch options, profile management, and status messages
+  - Removed hardcoded Chinese status text "就绪 - Pandoc 可用" and replaced with proper `_("Ready - Pandoc available")`
+
+- **Main Window Translation Updates:**
+  - Fixed hardcoded dialog titles and messages in `pandoc_ui/gui/main_window.py`
+  - Added gettext import and updated all user-facing strings to use `_()` calls
+  - Fixed validation messages, error dialogs, and conversion result messages
+
+- **Command Preview Translation:**
+  - Updated all UI text creation in `pandoc_ui/gui/command_preview.py` to use `_()` calls
+  - Fixed hardcoded button text and validation messages
+
+#### 🌍 Translation Database Updates
+- **Chinese Translation Expansion:**
+  - Added 47 new translation entries to `pandoc_ui/locales/zh_CN/LC_MESSAGES/pandoc_ui.po`
+  - Key additions include dialog titles, error messages, profile management text:
+    - `"-- Select Profile --" → "-- 选择配置文件 --"`
+    - `"Save Profile" → "保存配置文件"`
+    - `"Batch Options" → "批量选项"`
+  - Recompiled all .mo files using `msgfmt` for immediate translation availability
+
+#### 📋 Copyright Integration
+- **Status Bar Enhancement:**  
+  - Added copyright information display in program status bar
+  - Shows "© 2025 pandoc-ui project" in bottom status area
+  - Integrated through existing status label system in `ui_components.py`
+
+#### 🔧 Translation Script Migration
+- **Bash Script Update:**
+  - Completely rewrote `scripts/generate_translations.sh` to use gettext instead of Qt tools
+  - Uses `xgettext` for string extraction and `msgfmt` for compilation
+  - Supports 7 languages with proper .po/.mo file generation
+  - Added error handling and installation instructions for missing gettext tools
+
+- **PowerShell Script Update:**
+  - Completely rewrote `scripts/generate_translations.ps1` to use gettext instead of Qt tools
+  - Windows-compatible PowerShell version with same functionality as bash script
+  - Added gettext tool detection and installation guidance for Windows users
+  - Maintains cross-platform compatibility for Windows development
+
+#### 🧹 Project Cleanup
+- **Temporary File Removal:**
+  - Removed test output files: `final_test.html`, `integration_test.html`, `test.pdf`, `out.html`
+  - Deleted crash report: `nuitka-crash-report.xml`
+  - Removed temporary migration script: `scripts/migrate_to_gettext.py`
+
+### Files Modified
+- **Core Translation Files:**
+  - Modified: `pandoc_ui/gui/ui_components.py` - Fixed all hardcoded text and translation manager import
+  - Modified: `pandoc_ui/gui/main_window.py` - Added gettext imports and fixed dialog text  
+  - Modified: `pandoc_ui/gui/command_preview.py` - Updated all UI text to use gettext
+
+- **Translation Data:**
+  - Modified: `pandoc_ui/locales/zh_CN/LC_MESSAGES/pandoc_ui.po` - Added 47 new translation entries
+  - Modified: `pandoc_ui/locales/zh_CN/LC_MESSAGES/pandoc_ui.mo` - Recompiled translation binary
+
+- **Build Scripts:**
+  - Modified: `scripts/generate_translations.sh` - Complete rewrite for gettext system
+  - Modified: `scripts/generate_translations.ps1` - Complete rewrite for gettext system
+
+- **Cleanup:**
+  - Deleted: `final_test.html`, `integration_test.html`, `test.pdf`, `out.html`, `nuitka-crash-report.xml`
+  - Deleted: `scripts/migrate_to_gettext.py`
+
+### Issues Resolved
+- Fixed mixed translation systems causing undefined `get_text()` function errors
+- Resolved hardcoded English text in batch options and profile dropdowns
+- Eliminated hardcoded Chinese status messages throughout the application
+- Migrated all translation generation scripts from Qt lupdate/lrelease to standard gettext tools
+- Added proper copyright attribution in application interface
+
+### Next Steps
+- Test complete application with Chinese language to verify all translations work correctly
+- Consider adding more language support using the established gettext infrastructure
+- Update user documentation to reflect new gettext-based translation system
+
 ## 2025-01-25-01:30 - Translation System Improvements and Debugging
 
 ### Task

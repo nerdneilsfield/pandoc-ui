@@ -1,0 +1,153 @@
+# Translation file for pandoc-ui
+# Copyright (C) 2025 pandoc-ui project
+# This file is distributed under the same license as the pandoc-ui package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: pandoc-ui 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-26 01:19\n"
+"PO-Revision-Date: 2025-06-26 01:19\n"
+"Last-Translator: \n"
+"Language-Team: 日本語\n"
+"Language: ja_JP\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "# No conversion profile or files selected"
+msgstr "# 変換プロファイルまたはファイルが選択されていません"
+
+msgid ".md,.rst,.txt (leave empty for auto-detect)"
+msgstr ".md,.rst,.txt（空白で自動検出）"
+
+msgid "Add custom pandoc arguments (e.g., --metadata title=\"My Title\" --toc):"
+msgstr "カスタムpandoc引数を追加（例：--metadata title=\"私のタイトル\" --toc）："
+
+msgid "Additional arguments to append to the pandoc command"
+msgstr "pandocコマンドに追加する追加引数"
+
+msgid "Batch Options"
+msgstr "バッチオプション"
+
+msgid "Clear Log"
+msgstr "ログクリア"
+
+msgid "Clear custom arguments"
+msgstr "カスタム引数をクリア"
+
+msgid "Command Preview"
+msgstr "コマンドプレビュー"
+
+msgid "Command for single file conversion:"
+msgstr "単一ファイル変換コマンド："
+
+msgid "Configuration Profiles"
+msgstr "設定プロファイル"
+
+msgid "Custom Arguments"
+msgstr "カスタム引数"
+
+msgid "Delete selected profile"
+msgstr "選択したプロファイルを削除"
+
+msgid "Enter custom pandoc arguments..."
+msgstr "カスタムpandoc引数を入力..."
+
+msgid "Error generating command preview"
+msgstr "コマンドプレビュー生成エラー"
+
+msgid "File Extensions:"
+msgstr "ファイル拡張子："
+
+msgid "Folder (Batch)"
+msgstr "フォルダ（バッチ）"
+
+msgid "Input Selection"
+msgstr "入力選択"
+
+msgid "Invalid argument format: %s"
+msgstr "無効な引数形式：%s"
+
+msgid "Language:"
+msgstr "言語："
+
+msgid "Load Snapshot"
+msgstr "スナップショット読み込み"
+
+msgid "Load selected profile configuration"
+msgstr "選択したプロファイル設定を読み込み"
+
+msgid "Log Output"
+msgstr "ログ出力"
+
+msgid "Max Files:"
+msgstr "最大ファイル数："
+
+msgid "No files selected."
+msgstr "ファイルが選択されていません。"
+
+msgid "Output Directory:"
+msgstr "出力ディレクトリ："
+
+msgid "Output Format:"
+msgstr "出力フォーマット："
+
+msgid "Output Settings"
+msgstr "出力設定"
+
+msgid "Output directory (leave empty for same as input)"
+msgstr "出力ディレクトリ（空白で入力と同じ）"
+
+msgid "Pandoc UI - Document Converter"
+msgstr "Pandoc UI - ドキュメントコンバーター"
+
+msgid "Pandoc not available"
+msgstr "Pandoc利用不可"
+
+msgid "Preview of pandoc command that will be executed:"
+msgstr "実行されるpandocコマンドのプレビュー："
+
+msgid "Progress"
+msgstr "進行状況"
+
+msgid "Ready - Pandoc available"
+msgstr "準備完了 - Pandoc利用可能"
+
+msgid "Recursive (All Subfolders)"
+msgstr "再帰的（全サブフォルダ）"
+
+msgid "Sample command for batch conversion (%d files):"
+msgstr "バッチ変換サンプルコマンド（%dファイル）："
+
+msgid "Save Snapshot"
+msgstr "スナップショット保存"
+
+msgid "Save current configuration as a profile"
+msgstr "現在の設定をプロファイルとして保存"
+
+msgid "Scan Mode:"
+msgstr "スキャンモード："
+
+msgid "Select a saved configuration profile"
+msgstr "保存された設定プロファイルを選択"
+
+msgid "Select input file or folder to convert..."
+msgstr "変換する入力ファイルまたはフォルダを選択..."
+
+msgid "Select interface language"
+msgstr "インターフェース言語を選択"
+
+msgid "Single File"
+msgstr "単一ファイル"
+
+msgid "Single Level Only"
+msgstr "単一レベルのみ"
+
+msgid "Start Conversion"
+msgstr "変換開始"
+
+msgid "This command will be executed for each of the %d selected files"
+msgstr "このコマンドは選択された %d 個のファイルそれぞれに対して実行されます"
+

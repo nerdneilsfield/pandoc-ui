@@ -1,0 +1,159 @@
+# Translation file for pandoc-ui
+# Copyright (C) 2025 pandoc-ui project
+# This file is distributed under the same license as the pandoc-ui package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: pandoc-ui 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-26 01:19\n"
+"PO-Revision-Date: 2025-06-26 01:19\n"
+"Last-Translator: \n"
+"Language-Team: Deutsch\n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "# No conversion profile or files selected"
+msgstr "# Kein Konvertierungsprofil oder Dateien ausgewählt"
+
+msgid ".md,.rst,.txt (leave empty for auto-detect)"
+msgstr ".md,.rst,.txt (leer lassen für Auto-Erkennung)"
+
+msgid "Add custom pandoc arguments (e.g., --metadata title=\"My Title\" --toc):"
+msgstr "Benutzerdefinierte pandoc-Argumente hinzufügen (z.B. --metadata title=\"Mein Titel\" --toc):"
+
+msgid "Additional arguments to append to the pandoc command"
+msgstr "Zusätzliche Argumente für den pandoc-Befehl"
+
+msgid "Batch Options"
+msgstr "Stapeloptionen"
+
+msgid "Clear Log"
+msgstr "Log löschen"
+
+msgid "Clear custom arguments"
+msgstr "Benutzerdefinierte Argumente löschen"
+
+msgid "Command Preview"
+msgstr "Befehlsvorschau"
+
+msgid "Command for single file conversion:"
+msgstr "Befehl für Einzeldateikonvertierung:"
+
+msgid "Configuration Profiles"
+msgstr "Konfigurationsprofile"
+
+msgid "Custom Arguments"
+msgstr "Benutzerdefinierte Argumente"
+
+msgid "Delete selected profile"
+msgstr "Ausgewähltes Profil löschen"
+
+msgid "Enter custom pandoc arguments..."
+msgstr "Benutzerdefinierte pandoc-Argumente eingeben..."
+
+msgid "Error generating command preview"
+msgstr "Fehler beim Generieren der Befehlsvorschau"
+
+msgid "File Extensions:"
+msgstr "Dateierweiterungen:"
+
+msgid "Folder (Batch)"
+msgstr "Ordner (Stapel)"
+
+msgid "Input Selection"
+msgstr "Eingabeauswahl"
+
+msgid "Invalid argument format: %s"
+msgstr "Ungültiges Argumentformat: %s"
+
+msgid "Invalid argument format: {e}"
+msgstr "Ungültiges Argumentformat: {e}"
+
+msgid "Language:"
+msgstr "Sprache:"
+
+msgid "Load Snapshot"
+msgstr "Schnappschuss laden"
+
+msgid "Load selected profile configuration"
+msgstr "Ausgewählte Profilkonfiguration laden"
+
+msgid "Log Output"
+msgstr "Log-Ausgabe"
+
+msgid "Max Files:"
+msgstr "Max. Dateien:"
+
+msgid "No files selected."
+msgstr "Keine Dateien ausgewählt."
+
+msgid "Output Directory:"
+msgstr "Ausgabeverzeichnis:"
+
+msgid "Output Format:"
+msgstr "Ausgabeformat:"
+
+msgid "Output Settings"
+msgstr "Ausgabeeinstellungen"
+
+msgid "Output directory (leave empty for same as input)"
+msgstr "Ausgabeverzeichnis (leer lassen für gleich wie Eingabe)"
+
+msgid "Pandoc UI - Document Converter"
+msgstr "Pandoc UI - Dokumentkonverter"
+
+msgid "Pandoc not available"
+msgstr "Pandoc nicht verfügbar"
+
+msgid "Preview of pandoc command that will be executed:"
+msgstr "Vorschau des auszuführenden pandoc-Befehls:"
+
+msgid "Progress"
+msgstr "Fortschritt"
+
+msgid "Ready - Pandoc available"
+msgstr "Bereit - Pandoc verfügbar"
+
+msgid "Recursive (All Subfolders)"
+msgstr "Rekursiv (Alle Unterordner)"
+
+msgid "Sample command for batch conversion (%d files):"
+msgstr "Beispielbefehl für Stapelkonvertierung (%d Dateien):"
+
+msgid "Sample command for batch conversion ({len(self.current_input_files)} files):"
+msgstr "Beispielbefehl für Stapelkonvertierung ({len(self.current_input_files)} Dateien):"
+
+msgid "Save Snapshot"
+msgstr "Schnappschuss speichern"
+
+msgid "Save current configuration as a profile"
+msgstr "Aktuelle Konfiguration als Profil speichern"
+
+msgid "Scan Mode:"
+msgstr "Scan-Modus:"
+
+msgid "Select a saved configuration profile"
+msgstr "Gespeichertes Konfigurationsprofil auswählen"
+
+msgid "Select input file or folder to convert..."
+msgstr "Eingabedatei oder -ordner zum Konvertieren auswählen..."
+
+msgid "Select interface language"
+msgstr "Oberflächensprache auswählen"
+
+msgid "Single File"
+msgstr "Einzelne Datei"
+
+msgid "Single Level Only"
+msgstr "Nur eine Ebene"
+
+msgid "Start Conversion"
+msgstr "Konvertierung starten"
+
+msgid "This command will be executed for each of the %d selected files"
+msgstr "Dieser Befehl wird für jede der %d ausgewählten Dateien ausgeführt"
+

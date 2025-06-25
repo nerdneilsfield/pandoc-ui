@@ -1,6 +1,6 @@
 #!/bin/bash
 # Translation generation script for pandoc-ui
-# Extracts strings using lupdate and compiles .qm files with lrelease
+# Extracts strings using xgettext and compiles .po files with msgfmt for gettext system
 
 # Don't exit on error immediately, we'll handle failures
 set +e
@@ -11,15 +11,15 @@ if [ ! -f "pyproject.toml" ]; then
     exit 1
 fi
 
-echo "🔧 Generating translations for pandoc-ui..."
+echo "🔧 Generating translations for pandoc-ui using gettext..."
 
-# Create translations directory if it doesn't exist
-mkdir -p pandoc_ui/translations
+# Create locales directory structure if it doesn't exist
+mkdir -p pandoc_ui/locales
 
 # Languages to support
 LANGUAGES=("zh_CN" "ja_JP" "ko_KR" "fr_FR" "de_DE" "es_ES" "zh_TW")
 
-# Find all Python files and UI files for translation
+# Find all Python files for translation
 echo "📝 Searching for translatable files..."
 
 # Create a temporary file list
@@ -28,130 +28,115 @@ FILE_LIST=$(mktemp)
 # Add all .py files in pandoc_ui (excluding __pycache__ and .pyc)
 find pandoc_ui -name "*.py" -type f | grep -v __pycache__ | sort > "$FILE_LIST"
 
-# Add all .ui files
-find pandoc_ui -name "*.ui" -type f | sort >> "$FILE_LIST"
-
 FILE_COUNT=$(wc -l < "$FILE_LIST")
-echo "📊 Found $FILE_COUNT files to scan"
+echo "📊 Found $FILE_COUNT Python files to scan"
 
-# Build complete file list first
-echo "📄 Building complete file list..."
-ALL_FILES=""
+# Extract translatable strings using xgettext
+echo "🔍 Extracting translatable strings..."
+pot_file="pandoc_ui/locales/pandoc_ui.pot"
 
-# Add UI files
-for uifile in $(find pandoc_ui -name "*.ui" -type f | sort); do
-    ALL_FILES="$ALL_FILES $uifile"
-done
+# Use xgettext to extract strings from Python files
+xgettext \
+    --language=Python \
+    --keyword=_ \
+    --keyword=ngettext:1,2 \
+    --output="$pot_file" \
+    --from-code=UTF-8 \
+    --add-comments=TRANSLATORS \
+    --copyright-holder="pandoc-ui project" \
+    --package-name="pandoc-ui" \
+    --package-version="1.0" \
+    --msgid-bugs-address="" \
+    --files-from="$FILE_LIST"
 
-# Add Python files
-for pyfile in $(find pandoc_ui -name "*.py" -type f | grep -v __pycache__ | sort); do
-    ALL_FILES="$ALL_FILES $pyfile"
-done
-
-echo "   Found $(echo $ALL_FILES | wc -w) files total"
-
-# Extract translatable strings for each language
-for lang in "${LANGUAGES[@]}"; do
-    echo "🔍 Extracting strings for $lang..."
-    ts_file="pandoc_ui/translations/pandoc_ui_${lang}.ts"
-    
-    # Try pyside6-lupdate with all files at once
-    echo "   Trying pyside6-lupdate..."
-    uv run pyside6-lupdate $ALL_FILES -no-obsolete -ts "$ts_file" 2>/dev/null
-    
-    if [ $? -ne 0 ]; then
-        echo "   pyside6-lupdate failed, trying system lupdate..."
-        # Try system lupdate as fallback
-        if command -v lupdate &> /dev/null; then
-            lupdate $ALL_FILES -no-obsolete -ts "$ts_file"
-            if [ $? -ne 0 ]; then
-                echo "   ❌ Both pyside6-lupdate and lupdate failed for $ts_file"
-                continue
-            fi
-        else
-            echo "   ❌ pyside6-lupdate failed and system lupdate not found"
-            echo "   🔧 Please install Qt linguistic tools:"
-            echo "      Ubuntu/Debian: sudo apt-get install qttools5-dev-tools"
-            echo "      Fedora: sudo dnf install qt5-linguist"
-            echo "      macOS: brew install qt"
-            continue
-        fi
-    fi
-    
-    # Check if the file was created/updated
-    if [ -f "$ts_file" ]; then
-        file_size=$(stat -c%s "$ts_file" 2>/dev/null || stat -f%z "$ts_file" 2>/dev/null || echo "0")
-        if [ "$file_size" -gt 100 ]; then
-            echo "   ✓ Updated $ts_file ($(echo $file_size | numfmt --to=iec-i --suffix=B 2>/dev/null || echo "${file_size} bytes"))"
-        else
-            echo "   ⚠️  Generated $ts_file but it seems empty"
-        fi
-    else
-        echo "   ❌ Failed to create $ts_file"
-    fi
-done
-
-echo ""
-echo "🔄 Updating translations from JSON..."
-# Update .ts files with translations from JSON
-if [ -f "pandoc_ui/translations/translations.json" ]; then
-    uv run python scripts/update_translations.py
-    if [ $? -ne 0 ]; then
-        echo "   ⚠️  Failed to update translations from JSON"
-    fi
+if [ $? -eq 0 ] && [ -f "$pot_file" ]; then
+    string_count=$(grep -c "^msgid" "$pot_file")
+    echo "   ✓ Extracted $string_count translatable strings to $pot_file"
 else
-    echo "   ⚠️  translations.json not found, skipping JSON update"
+    echo "   ❌ Failed to create .pot file"
+    echo "   🔧 Please install gettext tools:"
+    echo "      Ubuntu/Debian: sudo apt-get install gettext"
+    echo "      Fedora: sudo dnf install gettext"
+    echo "      macOS: brew install gettext"
+    exit 1
 fi
 
 echo ""
-echo "⚙️  Compiling .qm files..."
+echo "📝 Creating/updating .po files for each language..."
 
-# Compile all .ts files to .qm files
+# Create/update .po files for each language
 for lang in "${LANGUAGES[@]}"; do
-    ts_file="pandoc_ui/translations/pandoc_ui_${lang}.ts"
-    qm_file="pandoc_ui/translations/pandoc_ui_${lang}.qm"
+    echo "   Processing $lang..."
     
-    if [ -f "$ts_file" ]; then
-        echo "   Compiling $lang..."
-        
-        # Try pyside6-lrelease first
-        uv run pyside6-lrelease "$ts_file" -qm "$qm_file" 2>/dev/null
-        
-        if [ $? -ne 0 ]; then
-            # Try system lrelease as fallback
-            if command -v lrelease &> /dev/null; then
-                lrelease "$ts_file" -qm "$qm_file"
-                if [ $? -ne 0 ]; then
-                    echo "   ❌ Both pyside6-lrelease and lrelease failed for $qm_file"
-                    continue
-                fi
-            else
-                echo "   ❌ pyside6-lrelease failed and system lrelease not found"
-                continue
-            fi
-        fi
-        
-        if [ -f "$qm_file" ]; then
-            echo "   ✓ Generated $qm_file"
+    # Create directory structure
+    lang_dir="pandoc_ui/locales/$lang/LC_MESSAGES"
+    mkdir -p "$lang_dir"
+    
+    po_file="$lang_dir/pandoc_ui.po"
+    
+    if [ -f "$po_file" ]; then
+        # Update existing .po file
+        echo "     Updating existing $po_file..."
+        msgmerge --update --backup=none "$po_file" "$pot_file"
+        if [ $? -eq 0 ]; then
+            echo "     ✓ Updated $po_file"
         else
-            echo "   ❌ Failed to generate $qm_file"
+            echo "     ❌ Failed to update $po_file"
+            continue
+        fi
+    else
+        # Create new .po file
+        echo "     Creating new $po_file..."
+        msginit --input="$pot_file" --output-file="$po_file" --locale="$lang" --no-translator
+        if [ $? -eq 0 ]; then
+            echo "     ✓ Created $po_file"
+        else
+            echo "     ❌ Failed to create $po_file"
+            continue
         fi
     fi
 done
 
 echo ""
-echo "✅ Translation files generated!"
+echo "⚙️  Compiling .mo files..."
+
+# Compile all .po files to .mo files
+for lang in "${LANGUAGES[@]}"; do
+    lang_dir="pandoc_ui/locales/$lang/LC_MESSAGES"
+    po_file="$lang_dir/pandoc_ui.po"
+    mo_file="$lang_dir/pandoc_ui.mo"
+    
+    if [ -f "$po_file" ]; then
+        echo "   Compiling $lang..."
+        
+        msgfmt --output-file="$mo_file" "$po_file"
+        
+        if [ $? -eq 0 ] && [ -f "$mo_file" ]; then
+            echo "   ✓ Generated $mo_file"
+        else
+            echo "   ❌ Failed to generate $mo_file"
+        fi
+    else
+        echo "   ⚠️  Skipping $lang (no .po file found)"
+    fi
+done
+
+echo ""
+echo "✅ Translation files generated using gettext!"
 echo ""
 echo "📝 Next steps:"
-echo "1. Edit pandoc_ui/translations/translations.json to add/update translations"
-echo "2. Run this script again to apply translations and compile .qm files"
-echo "3. Or use Qt Linguist for visual editing of .ts files"
+echo "1. Edit .po files in pandoc_ui/locales/*/LC_MESSAGES/ to add/update translations"
+echo "2. Run this script again to compile updated .mo files"
+echo "3. Or use a .po editor like Poedit for visual editing"
 echo ""
 echo "Generated files:"
 for lang in "${LANGUAGES[@]}"; do
-    echo "  - pandoc_ui/translations/pandoc_ui_${lang}.ts (source)"
-    echo "  - pandoc_ui/translations/pandoc_ui_${lang}.qm (compiled)"
+    echo "  - pandoc_ui/locales/$lang/LC_MESSAGES/pandoc_ui.po (source)"
+    echo "  - pandoc_ui/locales/$lang/LC_MESSAGES/pandoc_ui.mo (compiled)"
 done
 
-# Clean up temporary file
+# Clean up temporary files
 rm -f "$FILE_LIST"
+
+echo ""
+echo "🌍 Translation system successfully migrated to gettext!"
