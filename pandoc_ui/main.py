@@ -8,7 +8,7 @@ import sys
 
 from PySide6.QtWidgets import QApplication, QMainWindow
 
-from .gui.ui_components import MainWindowUI
+from pandoc_ui.gui.ui_components import MainWindowUI
 
 
 def setup_logging():

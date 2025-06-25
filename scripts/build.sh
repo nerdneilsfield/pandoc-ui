@@ -136,9 +136,7 @@ if [ ! -z "$ICON_ARG" ]; then
 fi
 
 # Add entry point
-NUITKA_ARGS+=(pandoc_ui/main.py)
-
-uv run python -m nuitka "${NUITKA_ARGS[@]}"
+uv run python -m nuitka "${NUITKA_ARGS[@]}" pandoc_ui/main.py
 
 # Check if build was successful
 if [ -f "$DIST_DIR/$OUTPUT_FILE" ]; then
