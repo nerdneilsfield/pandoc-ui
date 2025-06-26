@@ -288,6 +288,10 @@ AppImage creates portable, self-contained Linux applications that run on most di
 
 # Build AppImage directly (advanced)
 ./scripts/build_appimage.sh --clean --test
+
+# Alternative AppImage methods:
+./scripts/build_simple_appimage.sh        # Simple Nuitka-based method
+./scripts/build_appimage_builder.sh       # Professional appimage-builder method
 ```
 
 #### AppImage Technical Details

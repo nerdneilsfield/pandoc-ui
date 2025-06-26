@@ -5,6 +5,9 @@
 
 set -e
 
+# Get script directory for relative paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Parse command line arguments
 OPTIMIZE_BINARY=true
 STRIP_LEVEL="conservative"
@@ -267,7 +270,7 @@ if [ -f "$DIST_DIR/$OUTPUT_FILE" ]; then
         echo "🔧 Optimizing binary with strip (level: $STRIP_LEVEL)..."
         
         # Check if strip optimization script exists
-        STRIP_SCRIPT="$SCRIPT_DIR/strip_optimize.sh"
+        STRIP_SCRIPT="scripts/strip_optimize.sh"
         if [[ -f "$STRIP_SCRIPT" ]]; then
             # Make strip script executable
             chmod +x "$STRIP_SCRIPT"
@@ -348,7 +351,7 @@ if [ -f "$DIST_DIR/$OUTPUT_FILE" ]; then
             echo "📦 Creating AppImage..."
             
             # Check if AppImage build script exists
-            APPIMAGE_SCRIPT="$SCRIPT_DIR/build_appimage.sh"
+            APPIMAGE_SCRIPT="scripts/build_appimage.sh"
             if [[ -f "$APPIMAGE_SCRIPT" ]]; then
                 # Make AppImage script executable
                 chmod +x "$APPIMAGE_SCRIPT"
