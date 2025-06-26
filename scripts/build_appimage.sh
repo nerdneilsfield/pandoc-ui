@@ -36,10 +36,10 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Logging functions
-log_info() { echo -e "${CYAN}ℹ️  $1${NC}"; }
-log_success() { echo -e "${GREEN}✅ $1${NC}"; }
-log_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
-log_error() { echo -e "${RED}❌ $1${NC}"; }
+log_info() { echo -e "${CYAN}[INFO] $1${NC}"; }
+log_success() { echo -e "${GREEN}[SUCCESS] $1${NC}"; }
+log_warning() { echo -e "${YELLOW}[WARNING] $1${NC}"; }
+log_error() { echo -e "${RED}[ERROR] $1${NC}"; }
 
 # Show usage
 show_usage() {
@@ -226,7 +226,7 @@ else
     log_info "Use --verbose flag to see detailed compilation output"
     "$SCRIPT_DIR/build.sh" "${BUILD_ARGS[@]}" 2>&1 | while IFS= read -r line; do
         # Show important progress indicators
-        if [[ "$line" == *"Progress"* ]] || [[ "$line" == *"Building"* ]] || [[ "$line" == *"✅"* ]] || [[ "$line" == *"ERROR"* ]] || [[ "$line" == *"WARNING"* ]] || [[ "$line" == *"SUCCESS"* ]]; then
+        if [[ "$line" == *"Progress"* ]] || [[ "$line" == *"Building"* ]] || [[ "$line" == *"SUCCESS"* ]] || [[ "$line" == *"ERROR"* ]] || [[ "$line" == *"WARNING"* ]] || [[ "$line" == *"Compiling"* ]]; then
             echo "$line"
         fi
     done

@@ -26,10 +26,10 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Logging functions
-log_info() { echo -e "${CYAN}ℹ️  $1${NC}"; }
-log_success() { echo -e "${GREEN}✅ $1${NC}"; }
-log_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
-log_error() { echo -e "${RED}❌ $1${NC}"; }
+log_info() { echo -e "${CYAN}[INFO] $1${NC}"; }
+log_success() { echo -e "${GREEN}[SUCCESS] $1${NC}"; }
+log_warning() { echo -e "${YELLOW}[WARNING] $1${NC}"; }
+log_error() { echo -e "${RED}[ERROR] $1${NC}"; }
 
 # Show usage
 show_usage() {
@@ -140,6 +140,52 @@ fi
 if [[ ! -f "$BINARY_PATH" ]]; then
     log_error "Binary file not found: $BINARY_PATH"
     exit 1
+fi
+
+# Check if this is a Nuitka onefile binary
+detect_nuitka_onefile() {
+    local binary="$1"
+    
+    # Check for Nuitka signature in the binary
+    if strings "$binary" | grep -q "NUITKA_ONEFILE_PARENT\|__onefile_tmpdir__\|onefile_definitions.h"; then
+        return 0  # Is Nuitka onefile
+    fi
+    
+    # Check for attached data section (common in onefile binaries)
+    if strings "$binary" | grep -q "attached.*data\|onefileconstants\|KiB compressed"; then
+        return 0  # Likely onefile with attached data
+    fi
+    
+    return 1  # Not detected as onefile
+}
+
+# Nuitka onefile protection
+if detect_nuitka_onefile "$BINARY_PATH"; then
+    log_warning "Detected Nuitka onefile binary - this contains attached Python runtime data"
+    log_warning "Strip operations can break onefile binaries by corrupting attached data"
+    
+    # For Nuitka onefile, we should be extremely conservative or refuse
+    case "$STRIP_LEVEL" in
+        conservative)
+            log_warning "Using minimal stripping for Nuitka onefile binary"
+            log_warning "Even conservative stripping may corrupt Nuitka onefile binaries"
+            log_info "If problems occur, use --no-strip option"
+            ;;
+        moderate|aggressive)
+            log_error "Moderate/Aggressive stripping NOT SAFE for Nuitka onefile binaries"
+            log_error "Nuitka onefile binaries contain compressed Python runtime and libraries"
+            log_error "Stripping can corrupt the attached data and make the binary unusable"
+            log_info "Use 'conservative' level or --no-strip for Nuitka onefile binaries"
+            
+            if [[ "$FORCE" != true ]]; then
+                log_error "Aborting to prevent binary corruption"
+                log_info "Use --force to override this safety check (NOT RECOMMENDED)"
+                exit 1
+            else
+                log_warning "FORCE mode enabled - proceeding despite safety risks"
+            fi
+            ;;
+    esac
 fi
 
 # Check if strip is available
