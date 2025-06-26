@@ -51,12 +51,19 @@ EXAMPLES:
     .\scripts\windows_build.ps1 -CreateInstaller -StripLevel Moderate # Optimized installer
 
 NOTES:
+    - CreateInstaller automatically forces standalone mode to avoid onefile corruption
     - CreateInstaller requires NSIS (auto-downloads if not found)
     - Installer includes Modern UI, file associations, and context menu integration
     - Use CreateInstaller for professional Windows distribution packages
 
 "@ -ForegroundColor White
     exit 0
+}
+
+# Force standalone mode when creating installer to avoid onefile strip corruption
+if ($CreateInstaller -and -not $Standalone) {
+    Write-Host "ℹ️  Forcing standalone mode for installer creation (avoids onefile strip corruption)" -ForegroundColor Cyan
+    $Standalone = $true
 }
 
 $BuildMode = if ($Standalone) { "standalone directory" } else { "single file" }
