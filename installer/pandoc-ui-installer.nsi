@@ -19,6 +19,10 @@
 !include "WinVer.nsh"
 !include "x64.nsh"
 
+; Additional utilities
+!include "FileFunc.nsh"
+!insertmacro GetSize
+
 ; MUI Settings
 !define MUI_ABORTWARNING
 !define MUI_ICON "..\resources\icons\app.ico"
@@ -404,7 +408,3 @@ Section Uninstall
   
   SetAutoClose true
 SectionEnd
-
-; Include additional utilities
-!include "FileFunc.nsh"
-!insertmacro GetSize
