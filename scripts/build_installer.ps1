@@ -206,21 +206,42 @@ $WelcomeBmp = "$InstallerDir\welcome.bmp"
 $HeaderBmp = "$InstallerDir\header.bmp"
 
 if (-not (Test-Path $WelcomeBmp) -or -not (Test-Path $HeaderBmp)) {
-    Write-Host "⚠️  Creating placeholder installer graphics..." -ForegroundColor Yellow
+    Write-Host "ℹ️  Installer graphics not found, using minimal placeholders..." -ForegroundColor Cyan
     
-    # Create simple placeholder BMP files
-    # This is a minimal 1x1 pixel BMP - in production, you'd want proper graphics
-    $BmpHeader = @(66, 77, 58, 0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 40, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 24, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 0)
+    # Create minimal placeholder BMP files using cross-compatible method
+    # This creates a valid 1x1 pixel BMP file
+    $BmpData = @(
+        0x42, 0x4D, 0x3A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x36, 0x00, 0x00, 0x00, 0x28, 0x00,
+        0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x18, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00
+    )
     
     if (-not (Test-Path $WelcomeBmp)) {
-        [byte[]]$BmpHeader | Set-Content -Path $WelcomeBmp -Encoding Byte
-        Write-Host "📝 Created placeholder: $WelcomeBmp (164x314 pixels recommended)" -ForegroundColor Gray
+        try {
+            $WelcomeFullPath = Join-Path (Get-Location) $WelcomeBmp
+            [System.IO.File]::WriteAllBytes($WelcomeFullPath, $BmpData)
+            Write-Host "📝 Created placeholder: welcome.bmp (recommended: 164x314 pixels)" -ForegroundColor Gray
+        } catch {
+            Write-Host "⚠️  Could not create welcome.bmp placeholder: $($_.Exception.Message)" -ForegroundColor Yellow
+            Write-Host "💡 You may need to provide your own installer graphics" -ForegroundColor Cyan
+        }
     }
     
     if (-not (Test-Path $HeaderBmp)) {
-        [byte[]]$BmpHeader | Set-Content -Path $HeaderBmp -Encoding Byte
-        Write-Host "📝 Created placeholder: $HeaderBmp (150x57 pixels recommended)" -ForegroundColor Gray
+        try {
+            $HeaderFullPath = Join-Path (Get-Location) $HeaderBmp
+            [System.IO.File]::WriteAllBytes($HeaderFullPath, $BmpData)
+            Write-Host "📝 Created placeholder: header.bmp (recommended: 150x57 pixels)" -ForegroundColor Gray
+        } catch {
+            Write-Host "⚠️  Could not create header.bmp placeholder: $($_.Exception.Message)" -ForegroundColor Yellow
+            Write-Host "💡 You may need to provide your own installer graphics" -ForegroundColor Cyan
+        }
     }
+    
+    Write-Host "💡 For professional installers, replace placeholders with custom graphics:" -ForegroundColor Cyan
+    Write-Host "   - $WelcomeBmp (164x314 pixels)" -ForegroundColor Gray
+    Write-Host "   - $HeaderBmp (150x57 pixels)" -ForegroundColor Gray
 }
 
 # Update version in NSIS script
