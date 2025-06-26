@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: pandoc-ui 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-26 01:19\n"
+"POT-Creation-Date: 2025-06-26 09:34+0800\n"
 "PO-Revision-Date: 2025-06-26 01:19\n"
 "Last-Translator: \n"
 "Language-Team: Français\n"
@@ -16,138 +16,355 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "# No conversion profile or files selected"
-msgstr "# Aucun profil de conversion ou fichier sélectionné"
-
-msgid ".md,.rst,.txt (leave empty for auto-detect)"
-msgstr ".md,.rst,.txt (laisser vide pour auto-détecter)"
-
-msgid "Add custom pandoc arguments (e.g., --metadata title=\"My Title\" --toc):"
-msgstr "Ajouter des arguments pandoc personnalisés (ex: --metadata title=\"Mon Titre\" --toc):"
-
-msgid "Additional arguments to append to the pandoc command"
-msgstr "Arguments supplémentaires à ajouter à la commande pandoc"
-
-msgid "Batch Options"
-msgstr "Options de lot"
-
-msgid "Clear Log"
-msgstr "Effacer le log"
-
-msgid "Clear custom arguments"
-msgstr "Effacer les arguments personnalisés"
-
-msgid "Command Preview"
-msgstr "Aperçu de la commande"
-
-msgid "Command for single file conversion:"
-msgstr "Commande pour conversion de fichier unique:"
-
-msgid "Configuration Profiles"
-msgstr "Profils de configuration"
-
-msgid "Custom Arguments"
-msgstr "Arguments personnalisés"
-
-msgid "Delete selected profile"
-msgstr "Supprimer le profil sélectionné"
-
-msgid "Enter custom pandoc arguments..."
-msgstr "Entrer des arguments pandoc personnalisés..."
-
-msgid "Error generating command preview"
-msgstr "Erreur lors de la génération de l'aperçu de commande"
-
-msgid "File Extensions:"
-msgstr "Extensions de fichier:"
-
-msgid "Folder (Batch)"
-msgstr "Dossier (Lot)"
-
-msgid "Input Selection"
-msgstr "Sélection d'entrée"
-
-msgid "Invalid argument format: %s"
-msgstr "Format d'argument invalide: %s"
-
-msgid "Language:"
-msgstr "Langue:"
-
-msgid "Load Snapshot"
-msgstr "Charger l'instantané"
-
-msgid "Load selected profile configuration"
-msgstr "Charger la configuration du profil sélectionné"
-
-msgid "Log Output"
-msgstr "Sortie de log"
-
-msgid "Max Files:"
-msgstr "Fichiers max:"
-
-msgid "No files selected."
-msgstr "Aucun fichier sélectionné."
-
-msgid "Output Directory:"
-msgstr "Répertoire de sortie:"
-
-msgid "Output Format:"
-msgstr "Format de sortie:"
-
-msgid "Output Settings"
-msgstr "Paramètres de sortie"
-
-msgid "Output directory (leave empty for same as input)"
-msgstr "Répertoire de sortie (laisser vide pour identique à l'entrée)"
-
-msgid "Pandoc UI - Document Converter"
-msgstr "Pandoc UI - Convertisseur de documents"
-
-msgid "Pandoc not available"
-msgstr "Pandoc non disponible"
-
+#: pandoc_ui/gui/command_preview.py:63 pandoc_ui/gui/ui_components.py:1593
+#: pandoc_ui/gui/ui_components.py:1764
 msgid "Preview of pandoc command that will be executed:"
 msgstr "Aperçu de la commande pandoc qui sera exécutée:"
 
-msgid "Progress"
-msgstr "Progrès"
+#: pandoc_ui/gui/command_preview.py:96 pandoc_ui/gui/ui_components.py:1736
+msgid "Custom Arguments"
+msgstr "Arguments personnalisés"
 
-msgid "Ready - Pandoc available"
-msgstr "Prêt - Pandoc disponible"
+#: pandoc_ui/gui/command_preview.py:100 pandoc_ui/gui/ui_components.py:1766
+msgid ""
+"Add custom pandoc arguments (e.g., --metadata title=\"My Title\" --toc):"
+msgstr ""
+"Ajouter des arguments pandoc personnalisés (ex: --metadata title=\"Mon "
+"Titre\" --toc):"
 
-msgid "Recursive (All Subfolders)"
-msgstr "Récursif (Tous les sous-dossiers)"
+#: pandoc_ui/gui/command_preview.py:108 pandoc_ui/gui/ui_components.py:1803
+msgid "Enter custom pandoc arguments..."
+msgstr "Entrer des arguments pandoc personnalisés..."
 
+#: pandoc_ui/gui/command_preview.py:109 pandoc_ui/gui/ui_components.py:1809
+msgid "Additional arguments to append to the pandoc command"
+msgstr "Arguments supplémentaires à ajouter à la commande pandoc"
+
+#: pandoc_ui/gui/command_preview.py:113 pandoc_ui/gui/command_preview.py:114
+#: pandoc_ui/gui/ui_components.py:1778 pandoc_ui/gui/ui_components.py:1811
+msgid "Clear custom arguments"
+msgstr "Effacer les arguments personnalisés"
+
+#: pandoc_ui/gui/command_preview.py:167
+#, python-format
+msgid "Invalid argument format: %s"
+msgstr "Format d'argument invalide: %s"
+
+#: pandoc_ui/gui/command_preview.py:194
+msgid "No files selected."
+msgstr "Aucun fichier sélectionné."
+
+#: pandoc_ui/gui/command_preview.py:196
+msgid "Command for single file conversion:"
+msgstr "Commande pour conversion de fichier unique:"
+
+#: pandoc_ui/gui/command_preview.py:198
+#, python-format
 msgid "Sample command for batch conversion (%d files):"
 msgstr "Exemple de commande pour conversion par lot (%d fichiers):"
 
-msgid "Save Snapshot"
-msgstr "Sauvegarder l'instantané"
+#: pandoc_ui/gui/command_preview.py:204
+msgid "Error generating command preview"
+msgstr "Erreur lors de la génération de l'aperçu de commande"
 
-msgid "Save current configuration as a profile"
-msgstr "Sauvegarder la configuration actuelle comme profil"
+#: pandoc_ui/gui/command_preview.py:214
+msgid "# No conversion profile or files selected"
+msgstr "# Aucun profil de conversion ou fichier sélectionné"
 
-msgid "Scan Mode:"
-msgstr "Mode de scan:"
-
-msgid "Select a saved configuration profile"
-msgstr "Sélectionner un profil de configuration sauvegardé"
-
-msgid "Select input file or folder to convert..."
-msgstr "Sélectionner le fichier ou dossier d'entrée à convertir..."
-
-msgid "Select interface language"
-msgstr "Sélectionner la langue de l'interface"
-
-msgid "Single File"
-msgstr "Fichier unique"
-
-msgid "Single Level Only"
-msgstr "Un seul niveau"
-
-msgid "Start Conversion"
-msgstr "Démarrer la conversion"
-
+#: pandoc_ui/gui/command_preview.py:259
+#, python-format
 msgid "This command will be executed for each of the %d selected files"
 msgstr "Cette commande sera exécutée pour chacun des %d fichiers sélectionnés"
 
+#: pandoc_ui/gui/command_preview.py:263
+msgid "Warning: Custom arguments contain syntax errors"
+msgstr ""
+
+#: pandoc_ui/gui/main_window.py:91
+msgid "Select Input File"
+msgstr ""
+
+#: pandoc_ui/gui/main_window.py:121
+#, fuzzy
+msgid "Select Output Directory"
+msgstr "Répertoire de sortie:"
+
+#: pandoc_ui/gui/main_window.py:133 pandoc_ui/gui/main_window.py:144
+msgid "Error"
+msgstr ""
+
+#: pandoc_ui/gui/main_window.py:133
+#, fuzzy
+msgid "Please select a valid input file"
+msgstr "Supprimer le profil sélectionné"
+
+#: pandoc_ui/gui/main_window.py:144
+#, python-format
+msgid "Unsupported output format: %s"
+msgstr ""
+
+#: pandoc_ui/gui/main_window.py:217
+msgid "Success"
+msgstr ""
+
+#: pandoc_ui/gui/main_window.py:218
+#, python-format
+msgid ""
+"File converted successfully!\n"
+"\n"
+"Output saved to:\n"
+"%s"
+msgstr ""
+
+#: pandoc_ui/gui/main_window.py:223
+#, fuzzy
+msgid "Conversion Failed"
+msgstr "Démarrer la conversion"
+
+#: pandoc_ui/gui/main_window.py:223
+#, python-format
+msgid ""
+"Conversion failed:\n"
+"\n"
+"%s"
+msgstr ""
+
+#: pandoc_ui/gui/main_window.py:231 pandoc_ui/gui/ui_components.py:1774
+msgid "Start Conversion"
+msgstr "Démarrer la conversion"
+
+#: pandoc_ui/gui/main_window.py:265
+msgid "About Pandoc UI"
+msgstr ""
+
+#: pandoc_ui/gui/main_window.py:287 pandoc_ui/gui/ui_components.py:1199
+#: pandoc_ui/gui/ui_components.py:1817
+msgid "Ready - Pandoc available"
+msgstr "Prêt - Pandoc disponible"
+
+#: pandoc_ui/gui/main_window.py:290 pandoc_ui/gui/ui_components.py:1205
+#: pandoc_ui/gui/ui_components.py:1819
+msgid "Pandoc not available"
+msgstr "Pandoc non disponible"
+
+#: pandoc_ui/gui/main_window.py:295
+msgid "Pandoc Not Found"
+msgstr ""
+
+#: pandoc_ui/gui/main_window.py:310
+msgid "Conversion in Progress"
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1261
+msgid "Save Profile"
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1261
+msgid "Enter profile name:"
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1261
+#, fuzzy
+msgid "My Configuration"
+msgstr "Profils de configuration"
+
+#: pandoc_ui/gui/ui_components.py:1273
+msgid "Profile Exists"
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1274
+#, python-format
+msgid "Profile '%s' already exists. Overwrite?"
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1296
+msgid "Save Error"
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1296
+#, python-format
+msgid "Failed to save profile '%s'"
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1303 pandoc_ui/gui/ui_components.py:1331
+#: pandoc_ui/gui/ui_components.py:1364 pandoc_ui/gui/ui_components.py:1485
+#, fuzzy
+msgid "-- Select Profile --"
+msgstr "Supprimer le profil sélectionné"
+
+#: pandoc_ui/gui/ui_components.py:1305 pandoc_ui/gui/ui_components.py:1333
+#, fuzzy
+msgid "No Profile Selected"
+msgstr "Aucun fichier sélectionné."
+
+#: pandoc_ui/gui/ui_components.py:1305
+#, fuzzy
+msgid "Please select a profile to load"
+msgstr "Supprimer le profil sélectionné"
+
+#: pandoc_ui/gui/ui_components.py:1322
+msgid "Load Error"
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1322
+#, python-format
+msgid "Failed to load profile '%s'"
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1333
+#, fuzzy
+msgid "Please select a profile to delete"
+msgstr "Supprimer le profil sélectionné"
+
+#: pandoc_ui/gui/ui_components.py:1345
+#, fuzzy
+msgid "Delete Profile"
+msgstr "Supprimer le profil sélectionné"
+
+#: pandoc_ui/gui/ui_components.py:1346
+#, python-format
+msgid "Are you sure you want to delete profile '%s'?"
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1357
+msgid "Delete Error"
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1357
+#, fuzzy, python-format
+msgid "Failed to delete profile '%s'"
+msgstr "Supprimer le profil sélectionné"
+
+#: pandoc_ui/gui/ui_components.py:1417
+#, fuzzy
+msgid "Language Changed"
+msgstr "Langue:"
+
+#: pandoc_ui/gui/ui_components.py:1418
+#, python-format
+msgid ""
+"Language changed to %s.\n"
+"UI text has been updated to reflect the new language."
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1424
+msgid "Language Switch Failed"
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1425
+#, python-format
+msgid "Failed to switch to %s. Translation files may be missing."
+msgstr ""
+
+#: pandoc_ui/gui/ui_components.py:1724
+msgid "Pandoc UI - Document Converter"
+msgstr "Pandoc UI - Convertisseur de documents"
+
+#: pandoc_ui/gui/ui_components.py:1728
+msgid "Input Selection"
+msgstr "Sélection d'entrée"
+
+#: pandoc_ui/gui/ui_components.py:1730
+msgid "Output Settings"
+msgstr "Paramètres de sortie"
+
+#: pandoc_ui/gui/ui_components.py:1732
+msgid "Batch Options"
+msgstr "Options de lot"
+
+#: pandoc_ui/gui/ui_components.py:1734
+msgid "Command Preview"
+msgstr "Aperçu de la commande"
+
+#: pandoc_ui/gui/ui_components.py:1738
+msgid "Progress"
+msgstr "Progrès"
+
+#: pandoc_ui/gui/ui_components.py:1740
+msgid "Log Output"
+msgstr "Sortie de log"
+
+#: pandoc_ui/gui/ui_components.py:1742
+msgid "Configuration Profiles"
+msgstr "Profils de configuration"
+
+#: pandoc_ui/gui/ui_components.py:1746
+msgid "Single File"
+msgstr "Fichier unique"
+
+#: pandoc_ui/gui/ui_components.py:1748
+msgid "Folder (Batch)"
+msgstr "Dossier (Lot)"
+
+#: pandoc_ui/gui/ui_components.py:1752
+msgid "Output Format:"
+msgstr "Format de sortie:"
+
+#: pandoc_ui/gui/ui_components.py:1754
+msgid "Output Directory:"
+msgstr "Répertoire de sortie:"
+
+#: pandoc_ui/gui/ui_components.py:1756
+msgid "File Extensions:"
+msgstr "Extensions de fichier:"
+
+#: pandoc_ui/gui/ui_components.py:1758
+msgid "Scan Mode:"
+msgstr "Mode de scan:"
+
+#: pandoc_ui/gui/ui_components.py:1760
+msgid "Max Files:"
+msgstr "Fichiers max:"
+
+#: pandoc_ui/gui/ui_components.py:1762
+msgid "Language:"
+msgstr "Langue:"
+
+#: pandoc_ui/gui/ui_components.py:1770 pandoc_ui/gui/ui_components.py:1772
+#: pandoc_ui/gui/ui_components.py:1799
+msgid "Select input file or folder to convert..."
+msgstr "Sélectionner le fichier ou dossier d'entrée à convertir..."
+
+#: pandoc_ui/gui/ui_components.py:1776
+msgid "Clear Log"
+msgstr "Effacer le log"
+
+#: pandoc_ui/gui/ui_components.py:1780
+msgid "Save Snapshot"
+msgstr "Sauvegarder l'instantané"
+
+#: pandoc_ui/gui/ui_components.py:1782
+msgid "Load Snapshot"
+msgstr "Charger l'instantané"
+
+#: pandoc_ui/gui/ui_components.py:1784
+msgid "Delete selected profile"
+msgstr "Supprimer le profil sélectionné"
+
+#: pandoc_ui/gui/ui_components.py:1791
+msgid "Recursive (All Subfolders)"
+msgstr "Récursif (Tous les sous-dossiers)"
+
+#: pandoc_ui/gui/ui_components.py:1792
+msgid "Single Level Only"
+msgstr "Un seul niveau"
+
+#: pandoc_ui/gui/ui_components.py:1801
+msgid "Output directory (leave empty for same as input)"
+msgstr "Répertoire de sortie (laisser vide pour identique à l'entrée)"
+
+#: pandoc_ui/gui/ui_components.py:1805
+msgid ".md,.rst,.txt (leave empty for auto-detect)"
+msgstr ".md,.rst,.txt (laisser vide pour auto-détecter)"
+
+#~ msgid "Load selected profile configuration"
+#~ msgstr "Charger la configuration du profil sélectionné"
+
+#~ msgid "Save current configuration as a profile"
+#~ msgstr "Sauvegarder la configuration actuelle comme profil"
+
+#~ msgid "Select a saved configuration profile"
+#~ msgstr "Sélectionner un profil de configuration sauvegardé"
+
+#~ msgid "Select interface language"
+#~ msgstr "Sélectionner la langue de l'interface"

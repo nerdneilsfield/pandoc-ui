@@ -211,12 +211,16 @@ fi
 log_info "Building main application..."
 cd "$PROJECT_ROOT"
 
-BUILD_ARGS=()
+BUILD_ARGS=("--standalone")
+# Force standalone mode for AppImage to avoid onefile strip corruption
+
 if [[ "$STRIP_BINARY" = false ]]; then
     BUILD_ARGS+=("--no-strip")
 else
     BUILD_ARGS+=("--strip-level" "$STRIP_LEVEL")
 fi
+
+log_info "Using standalone mode for AppImage compatibility"
 
 if [[ "$VERBOSE" = true ]]; then
     "$SCRIPT_DIR/build.sh" "${BUILD_ARGS[@]}"
@@ -232,8 +236,8 @@ else
     done
 fi
 
-# Find the built binary
-BUILT_BINARY="$PROJECT_ROOT/dist/linux/$APP_NAME-linux-$APP_VERSION"
+# Find the built binary (standalone mode creates a directory)
+BUILT_BINARY="$PROJECT_ROOT/dist/linux/$APP_NAME-linux-$APP_VERSION/$APP_NAME-linux-$APP_VERSION"
 if [[ ! -f "$BUILT_BINARY" ]]; then
     log_error "Built binary not found: $BUILT_BINARY"
     log_error "Make sure the main build completed successfully"

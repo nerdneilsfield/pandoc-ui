@@ -12,6 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPTIMIZE_BINARY=true
 STRIP_LEVEL="conservative"
 BUILD_APPIMAGE=false
+BUILD_MODE="onefile"  # Default to onefile, standalone for packaging
 HELP=false
 
 while [[ $# -gt 0 ]]; do
@@ -26,6 +27,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --appimage)
             BUILD_APPIMAGE=true
+            shift
+            ;;
+        --standalone)
+            BUILD_MODE="standalone"
             shift
             ;;
         --help|-h)
@@ -52,6 +57,7 @@ OPTIONS:
     --strip-level LEVEL     Set strip optimization level (conservative, moderate, aggressive)
                            Default: conservative
     --appimage              Build AppImage after creating binary (Linux only)
+    --standalone            Use standalone mode instead of onefile (recommended for packaging)
     --help, -h              Show this help message
 
 STRIP LEVELS:
@@ -210,7 +216,7 @@ fi
 echo "🔨 Building with Nuitka..."
 
 NUITKA_ARGS=(
-    --onefile
+    --${BUILD_MODE}
     --enable-plugin=pyside6
     --disable-console
     --output-dir="$DIST_DIR"
