@@ -263,9 +263,8 @@ try {
     
     Push-Location $InstallerDir
     
-    # Run NSIS compiler
+    # Run NSIS compiler (version already updated in .nsi file)
     $NSISArgs = @(
-        "/DPRODUCT_VERSION=$Version"
         "pandoc-ui-installer.nsi"
     )
     

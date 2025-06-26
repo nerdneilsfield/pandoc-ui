@@ -223,10 +223,10 @@ if [[ "$VERBOSE" = true ]]; then
 else
     # Show Nuitka progress even in non-verbose mode since builds can take long
     log_info "Running Nuitka compilation (this may take several minutes)..."
-    log_info "💡 Use --verbose flag to see detailed compilation output"
+    log_info "Use --verbose flag to see detailed compilation output"
     "$SCRIPT_DIR/build.sh" "${BUILD_ARGS[@]}" 2>&1 | while IFS= read -r line; do
         # Show important progress indicators
-        if [[ "$line" == *"Progress"* ]] || [[ "$line" == *"✅"* ]] || [[ "$line" == *"🔨"* ]] || [[ "$line" == *"📊"* ]] || [[ "$line" == *"⚠️"* ]] || [[ "$line" == *"❌"* ]]; then
+        if [[ "$line" == *"Progress"* ]] || [[ "$line" == *"Building"* ]] || [[ "$line" == *"✅"* ]] || [[ "$line" == *"ERROR"* ]] || [[ "$line" == *"WARNING"* ]] || [[ "$line" == *"SUCCESS"* ]]; then
             echo "$line"
         fi
     done
