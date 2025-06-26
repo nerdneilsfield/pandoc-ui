@@ -1,5 +1,70 @@
 # Claude Development Log
 
+## 2025-06-26-05:30 - Critical Nuitka Onefile Strip Issue Resolution and PowerShell Compatibility Fix
+
+### Task
+Resolve critical "couldn't find attached data header" error caused by stripping Nuitka onefile binaries, and fix PowerShell encoding compatibility issues in NSIS installer creation.
+
+### Critical Issues Discovered
+
+#### 1. Nuitka Onefile Binary Corruption
+- **Problem**: Post-build strip operations corrupted Nuitka onefile binaries
+- **Root Cause**: Nuitka onefile contains compressed Python runtime attached to executable
+- **Error**: "couldn't find attached data header" - binary completely unusable
+- **GitHub Evidence**: Nuitka Issue #3231 confirmed this as known issue
+
+#### 2. PowerShell Encoding Deprecation
+- **Problem**: `Set-Content -Encoding Byte` no longer supported in PowerShell 6+
+- **Error**: "'Byte' is not a supported encoding name"
+- **Impact**: NSIS installer graphics creation failed
+
+### Implementation Solutions
+
+#### 1. Intelligent Binary Type Detection
+- **Onefile Detection**: Search for "NUITKA_ONEFILE_PARENT", "__onefile_tmpdir__", "attached.*data"
+- **Safe Strategy**: Disable post-build stripping for onefile, enable for standalone
+- **Build-time Optimization**: Use Nuitka `--lto=yes` flag instead of dangerous post-build stripping
+
+#### 2. PowerShell Cross-Version Compatibility
+- **Modern Method**: `[System.IO.File]::WriteAllBytes()` for BMP creation
+- **Error Handling**: Graceful fallbacks with user guidance
+- **Path Resolution**: Proper absolute path handling for file operations
+
+### Files Modified
+- `scripts/build.sh`: Added onefile detection, LTO default, intelligent stripping logic
+- `scripts/windows_build.ps1`: Added onefile detection, PowerShell compatibility fixes
+- `scripts/build_installer.ps1`: Fixed BMP creation encoding issues
+- `BUILD.md`: Updated documentation with critical safety warnings
+
+### Technical Decisions
+
+#### 1. Default LTO Enablement
+- **Rationale**: LTO is safe and provides 5-15% size reduction for all builds
+- **Implementation**: `--lto=yes` enabled by default for all optimization levels
+- **Benefit**: Eliminates need for risky post-build operations
+
+#### 2. Safety-First Architecture
+- **Priority**: Prevent binary corruption over maximum size reduction
+- **Detection**: Automatic binary type identification prevents user errors
+- **Guidance**: Clear error messages explain why certain operations are blocked
+
+### Testing and Validation
+- **Onefile Safety**: Confirmed no post-build stripping on onefile binaries
+- **Standalone Compatibility**: Post-build stripping still available for standalone builds
+- **PowerShell Testing**: Cross-version compatibility verified
+- **NSIS Integration**: Installer creation works with placeholder graphics
+
+### Impact Assessment
+- **Critical Fix**: Eliminated complete binary corruption issue
+- **User Safety**: Prevents accidental destruction of onefile binaries
+- **Build Reliability**: Consistent successful builds across Windows PowerShell versions
+- **Documentation**: Comprehensive safety warnings and usage guidance
+
+### Next Steps
+- Monitor for additional Nuitka optimization opportunities
+- Consider implementing proper installer graphics generation
+- Evaluate additional safe compression methods for standalone builds
+
 ## 2025-06-25-11:47 - Comprehensive Strip Compression Research and Tool Suite Development
 
 ### Task
