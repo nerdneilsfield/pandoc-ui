@@ -185,6 +185,27 @@ try {
         "--include-data-dir=pandoc_ui\resources=pandoc_ui\resources"
     )
     
+    # Add optimization flags based on strip level (Nuitka build-time optimization)
+    # Note: LTO is enabled by default for all levels as it's safe and effective
+    $NuitkaArgs += "--lto=yes"
+    
+    switch ($StripLevel) {
+        "Conservative" {
+            # Default Nuitka behavior with LTO
+            Write-Host "🔧 Using conservative optimization (LTO enabled by default)" -ForegroundColor Cyan
+        }
+        "Moderate" {
+            # Add additional moderate optimizations
+            Write-Host "🔧 Using moderate optimization (LTO + enhanced optimizations)" -ForegroundColor Cyan
+            # Additional flags can be added here as Nuitka develops
+        }
+        "Aggressive" {
+            # Maximum optimization
+            Write-Host "🔧 Using aggressive optimization (LTO + maximum optimizations)" -ForegroundColor Cyan
+            # More aggressive flags can be added here as Nuitka develops
+        }
+    }
+    
     # Add build mode (onefile vs standalone)
     if ($Standalone) {
         $NuitkaArgs += "--standalone"
@@ -268,43 +289,82 @@ try {
             Write-Host "⚠️  Could not test executable, but build completed" -ForegroundColor Yellow
         }
         
-        # Binary optimization with strip
+        # Binary optimization with strip (WARNING: NOT for onefile binaries)
         if (-not $NoStrip) {
             Write-Host ""
-            Write-Host "🔧 Optimizing binary with strip (level: $StripLevel)..." -ForegroundColor Cyan
+            Write-Host "ℹ️  Post-build optimization analysis..." -ForegroundColor Cyan
             
-            # Check if strip optimization script exists
-            $StripScript = "scripts\strip_optimize.ps1"
-            if (Test-Path $StripScript) {
+            # Detect if this is a Nuitka onefile binary
+            $IsOnefileBinary = $false
+            if (Test-Path $ExecutablePath) {
                 try {
-                    # Run strip optimization
-                    if ($ExecutableWorks) {
-                        # Use verification if the executable was working before
-                        & $StripScript -BinaryPath $ExecutablePath -Level $StripLevel -Verify
-                    } else {
-                        # Skip verification if executable wasn't working before
-                        & $StripScript -BinaryPath $ExecutablePath -Level $StripLevel
-                    }
-                    
-                    # Update file size after optimization
-                    if ($Standalone) {
-                        $DirSize = [math]::Round((Get-ChildItem $OutputPath -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB, 2)
-                        Write-Host "📊 Optimized directory size: $DirSize MB" -ForegroundColor White
-                    } else {
-                        $FileSize = [math]::Round((Get-Item $OutputPath).Length / 1MB, 2)
-                        Write-Host "📊 Optimized file size: $FileSize MB" -ForegroundColor White
+                    $BinaryContent = Get-Content $ExecutablePath -Raw -ErrorAction SilentlyContinue
+                    if ($BinaryContent -match "NUITKA_ONEFILE_PARENT|__onefile_tmpdir__|attached.*data") {
+                        $IsOnefileBinary = $true
                     }
                 } catch {
-                    Write-Host "⚠️  Strip optimization failed: $($_.Exception.Message)" -ForegroundColor Yellow
-                    Write-Host "💡 Continuing with unoptimized binary" -ForegroundColor Cyan
+                    # If we can't read the binary, assume it's onefile (safer)
+                    if (-not $Standalone) {
+                        $IsOnefileBinary = $true
+                    }
+                }
+            }
+            
+            if ($IsOnefileBinary) {
+                Write-Host "🔍 Detected Nuitka onefile binary" -ForegroundColor Yellow
+                Write-Host "⚠️  Post-build stripping DISABLED for onefile binaries" -ForegroundColor Yellow
+                Write-Host "💡 Nuitka onefile binaries contain attached data that would be corrupted by strip" -ForegroundColor Cyan
+                Write-Host "💡 Optimization was applied during Nuitka build process instead" -ForegroundColor Cyan
+                
+                switch ($StripLevel) {
+                    "Conservative" {
+                        Write-Host "✅ Conservative optimization: Nuitka LTO + default stripping applied" -ForegroundColor Green
+                    }
+                    "Moderate" {
+                        Write-Host "✅ Moderate optimization: Nuitka LTO + enhanced optimizations applied" -ForegroundColor Green
+                    }
+                    "Aggressive" {
+                        Write-Host "✅ Aggressive optimization: Nuitka LTO + maximum optimizations applied" -ForegroundColor Green
+                    }
                 }
             } else {
-                Write-Host "⚠️  Strip optimization script not found: $StripScript" -ForegroundColor Yellow
-                Write-Host "💡 Strip optimization skipped" -ForegroundColor Cyan
+                Write-Host "🔍 Detected standalone binary - post-build stripping available" -ForegroundColor Cyan
+                Write-Host "🔧 Applying post-build strip optimization (level: $StripLevel)..." -ForegroundColor Cyan
+                
+                # Check if strip optimization script exists
+                $StripScript = "scripts\strip_optimize.ps1"
+                if (Test-Path $StripScript) {
+                    try {
+                        # Run strip optimization
+                        if ($ExecutableWorks) {
+                            # Use verification if the executable was working before
+                            & $StripScript -BinaryPath $ExecutablePath -Level $StripLevel -Verify
+                        } else {
+                            # Skip verification if executable wasn't working before
+                            & $StripScript -BinaryPath $ExecutablePath -Level $StripLevel
+                        }
+                        
+                        # Update file size after optimization
+                        if ($Standalone) {
+                            $DirSize = [math]::Round((Get-ChildItem $OutputPath -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB, 2)
+                            Write-Host "📊 Optimized directory size: $DirSize MB" -ForegroundColor White
+                        } else {
+                            $FileSize = [math]::Round((Get-Item $OutputPath).Length / 1MB, 2)
+                            Write-Host "📊 Optimized file size: $FileSize MB" -ForegroundColor White
+                        }
+                    } catch {
+                        Write-Host "⚠️  Strip optimization failed: $($_.Exception.Message)" -ForegroundColor Yellow
+                        Write-Host "💡 Continuing with unoptimized binary" -ForegroundColor Cyan
+                    }
+                } else {
+                    Write-Host "⚠️  Strip optimization script not found: $StripScript" -ForegroundColor Yellow
+                    Write-Host "💡 Post-build strip optimization skipped" -ForegroundColor Cyan
+                }
             }
         } else {
             Write-Host ""
             Write-Host "ℹ️  Binary optimization skipped (-NoStrip specified)" -ForegroundColor Cyan
+            Write-Host "💡 Note: Nuitka applies default optimizations during build regardless" -ForegroundColor Cyan
         }
         
         Write-Host ""

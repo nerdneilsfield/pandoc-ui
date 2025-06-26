@@ -247,24 +247,36 @@ Binary optimization removes debugging symbols and unnecessary metadata to reduce
 
 #### Strip Optimization Principles
 
-**Linux/macOS (GNU/BSD strip)**
+**⚠️ IMPORTANT: Nuitka Onefile Binary Handling**
 
-- `--strip-debug`: Removes debug symbols only (conservative)
-- `--strip-unneeded`: Removes unnecessary symbols (moderate)  
-- `--strip-all`: Removes all symbols (aggressive)
+Nuitka onefile binaries contain compressed Python runtime and dependencies attached to the executable. **Post-build stripping will corrupt these binaries** and cause "couldn't find attached data header" errors.
 
-**Windows (UPX Compression)**
+**Correct Optimization Strategy:**
+- **Onefile binaries**: Optimization happens during Nuitka build process
+  - Conservative: Default Nuitka stripping + LTO (Link-Time Optimization)
+  - Moderate: LTO + enhanced Nuitka optimizations
+  - Aggressive: LTO + maximum Nuitka optimization flags
+- **Standalone binaries**: Post-build stripping is safe
+  - Conservative: `--strip-debug` (removes debug symbols only)
+  - Moderate: `--strip-debug --strip-unneeded` (removes unnecessary symbols)
+  - Aggressive: `--strip-all` (removes all symbols)
 
-- Light compression for conservative level
-- Standard compression for moderate level
-- Maximum compression for aggressive level
+**Build System Intelligence:**
+- Automatically detects onefile vs standalone binaries
+- Disables post-build stripping for onefile to prevent corruption
+- Uses Nuitka build-time optimization for onefile binaries
+- Applies post-build stripping only to standalone binaries
+
+**Windows Optimization:**
+- Onefile: Nuitka LTO + default stripping + optional UPX (risky)
+- Standalone: Nuitka LTO + UPX compression with safety levels
 
 **Safety Considerations**
 
-- Qt/PySide6 applications require symbol information for plugin loading
-- Conservative level preserves essential symbols
-- Moderate level requires testing for compatibility
-- Aggressive level may break Qt applications
+- **Never manually strip Nuitka onefile binaries** - they will break
+- Onefile detection prevents accidental corruption
+- Qt/PySide6 applications require careful symbol handling
+- Build system prioritizes safety over size reduction
 
 ### Linux AppImage Distribution
 

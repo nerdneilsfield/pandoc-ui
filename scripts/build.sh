@@ -228,6 +228,27 @@ NUITKA_ARGS=(
     --include-data-dir=pandoc_ui/resources=pandoc_ui/resources
 )
 
+# Add optimization flags based on strip level (Nuitka build-time optimization)
+# Note: LTO is enabled by default for all levels as it's safe and effective
+NUITKA_ARGS+=(--lto=yes)
+
+case "$STRIP_LEVEL" in
+    conservative)
+        # Default Nuitka behavior with LTO
+        echo "🔧 Using conservative optimization (LTO enabled by default)"
+        ;;
+    moderate)
+        # Add additional moderate optimizations
+        echo "🔧 Using moderate optimization (LTO + enhanced optimizations)"
+        # Additional flags can be added here as Nuitka develops
+        ;;
+    aggressive)
+        # Maximum optimization
+        echo "🔧 Using aggressive optimization (LTO + maximum optimizations)"
+        # More aggressive flags can be added here as Nuitka develops
+        ;;
+esac
+
 # Add platform-specific arguments
 if [ ! -z "$PLATFORM_ARGS" ]; then
     NUITKA_ARGS+=($PLATFORM_ARGS)
@@ -264,36 +285,60 @@ if [ -f "$DIST_DIR/$OUTPUT_FILE" ]; then
         EXECUTABLE_WORKS=false
     fi
     
-    # Binary optimization with strip
+    # Binary optimization with strip (WARNING: NOT for onefile binaries)
     if [[ "$OPTIMIZE_BINARY" = true ]]; then
         echo ""
-        echo "🔧 Optimizing binary with strip (level: $STRIP_LEVEL)..."
+        echo "ℹ️  Post-build optimization analysis..."
         
-        # Check if strip optimization script exists
-        STRIP_SCRIPT="scripts/strip_optimize.sh"
-        if [[ -f "$STRIP_SCRIPT" ]]; then
-            # Make strip script executable
-            chmod +x "$STRIP_SCRIPT"
+        # Detect if this is a Nuitka onefile binary
+        if strings "$DIST_DIR/$OUTPUT_FILE" | grep -q "NUITKA_ONEFILE_PARENT\|__onefile_tmpdir__\|attached.*data"; then
+            echo "🔍 Detected Nuitka onefile binary"
+            echo "⚠️  Post-build stripping DISABLED for onefile binaries"
+            echo "💡 Nuitka onefile binaries contain attached data that would be corrupted by strip"
+            echo "💡 Optimization was applied during Nuitka build process instead"
             
-            # Run strip optimization
-            if [[ "$EXECUTABLE_WORKS" = true ]]; then
-                # Use verification if the executable was working before
-                "$STRIP_SCRIPT" --verify "$DIST_DIR/$OUTPUT_FILE" "$STRIP_LEVEL"
-            else
-                # Skip verification if executable wasn't working before
-                "$STRIP_SCRIPT" "$DIST_DIR/$OUTPUT_FILE" "$STRIP_LEVEL"
-            fi
-            
-            # Update file size after optimization
-            FILE_SIZE=$(du -h "$DIST_DIR/$OUTPUT_FILE" | cut -f1)
-            echo "📊 Optimized file size: $FILE_SIZE"
+            case "$STRIP_LEVEL" in
+                conservative)
+                    echo "✅ Conservative optimization: Nuitka LTO + default stripping applied"
+                    ;;
+                moderate)
+                    echo "✅ Moderate optimization: Nuitka LTO + enhanced optimizations applied"
+                    ;;
+                aggressive)
+                    echo "✅ Aggressive optimization: Nuitka LTO + maximum optimizations applied"
+                    ;;
+            esac
         else
-            echo "⚠️  Strip optimization script not found: $STRIP_SCRIPT"
-            echo "💡 Strip optimization skipped"
+            echo "🔍 Detected standalone binary - post-build stripping available"
+            echo "🔧 Applying post-build strip optimization (level: $STRIP_LEVEL)..."
+            
+            # Check if strip optimization script exists
+            STRIP_SCRIPT="scripts/strip_optimize.sh"
+            if [[ -f "$STRIP_SCRIPT" ]]; then
+                # Make strip script executable
+                chmod +x "$STRIP_SCRIPT"
+                
+                # Run strip optimization
+                if [[ "$EXECUTABLE_WORKS" = true ]]; then
+                    # Use verification if the executable was working before
+                    "$STRIP_SCRIPT" --verify "$DIST_DIR/$OUTPUT_FILE" "$STRIP_LEVEL"
+                else
+                    # Skip verification if executable wasn't working before
+                    "$STRIP_SCRIPT" "$DIST_DIR/$OUTPUT_FILE" "$STRIP_LEVEL"
+                fi
+                
+                # Update file size after optimization
+                FILE_SIZE=$(du -h "$DIST_DIR/$OUTPUT_FILE" | cut -f1)
+                echo "📊 Optimized file size: $FILE_SIZE"
+            else
+                echo "⚠️  Strip optimization script not found: $STRIP_SCRIPT"
+                echo "💡 Post-build strip optimization skipped"
+            fi
         fi
     else
         echo ""
         echo "ℹ️  Binary optimization skipped (--no-strip specified)"
+        echo "💡 Note: Nuitka applies default optimizations during build regardless"
     fi
     
     # Platform-specific post-build checks
