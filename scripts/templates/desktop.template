@@ -1,0 +1,18 @@
+[Desktop Entry]
+Type=Application
+Name=%APP_NAME%
+Comment=%APP_DESCRIPTION%
+Comment[zh_CN]=%APP_DESCRIPTION_ZH%
+GenericName=Document Converter
+GenericName[zh_CN]=文档转换器
+Exec=%EXEC_NAME%
+Icon=%ICON_NAME%
+Terminal=false
+Categories=Office;Publishing;Utility;
+MimeType=text/plain;text/markdown;text/x-markdown;application/pdf;application/epub+zip;
+Keywords=pandoc;converter;document;markdown;pdf;epub;docx;
+Version=%VERSION%
+X-AppImage-Version=%VERSION%
+StartupNotify=true
+StartupWMClass=%WM_CLASS%
+X-AppImage-Integrate=true

@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# AppRun script template for pandoc-ui
+# This script is executed when the AppImage is run
+
+# Get the directory where this script is located
+HERE="$(dirname "$(readlink -f "${0}")")"
+
+# Set up environment variables for the application
+export LD_LIBRARY_PATH="$HERE/usr/lib:$HERE/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+
+# Qt/PySide6 specific environment variables
+export QT_QPA_PLATFORM_PLUGIN_PATH="$HERE/usr/lib/qt6/plugins/platforms:$HERE/usr/bin/PySide6/Qt/plugins/platforms:$HERE/usr/lib/python3.*/site-packages/PySide6/Qt/plugins/platforms"
+export QT_PLUGIN_PATH="$HERE/usr/lib/qt6/plugins:$HERE/usr/bin/PySide6/Qt/plugins:$HERE/usr/lib/python3.*/site-packages/PySide6/Qt/plugins"
+export QML2_IMPORT_PATH="$HERE/usr/lib/qt6/qml:$HERE/usr/bin/PySide6/Qt/qml:$HERE/usr/lib/python3.*/site-packages/PySide6/Qt/qml"
+
+# Python environment variables
+export PYTHONPATH="$HERE/usr/lib/python3.*/site-packages:$PYTHONPATH"
+export PYTHONHOME="$HERE/usr"
+
+# Font configuration
+export FONTCONFIG_PATH="$HERE/usr/share/fontconfig/conf"
+export FONTCONFIG_FILE="$HERE/usr/share/fontconfig/fonts.conf"
+
+# Disable Qt's native file dialogs to avoid sandboxing issues
+export QT_QPA_PLATFORMTHEME=""
+
+# Set up XDG directories
+export XDG_DATA_DIRS="$HERE/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+export XDG_CONFIG_DIRS="$HERE/usr/etc/xdg:${XDG_CONFIG_DIRS:-/etc/xdg}"
+
+# Handle different invocation scenarios
+case "$1" in
+    --appimage-help)
+        echo "AppImage for pandoc-ui"
+        echo "Usage: $0 [OPTIONS]"
+        echo ""
+        echo "AppImage specific options:"
+        echo "  --appimage-extract         Extract AppImage contents"
+        echo "  --appimage-extract-and-run Extract and run without mounting"
+        echo "  --appimage-help            Show this help"
+        echo "  --appimage-info            Show AppImage information"
+        echo ""
+        echo "Application options:"
+        exec "$HERE/usr/bin/pandoc-ui" --help
+        ;;
+    --appimage-info)
+        echo "AppImage Information:"
+        echo "  Name: pandoc-ui"
+        echo "  Version: %VERSION%"
+        echo "  Architecture: x86_64"
+        echo "  Built: $(date)"
+        echo "  Size: $(du -h "$0" | cut -f1)"
+        exit 0
+        ;;
+    *)
+        # Run the main application
+        exec "$HERE/usr/bin/pandoc-ui" "$@"
+        ;;
+esac

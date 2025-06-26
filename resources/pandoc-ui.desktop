@@ -1,0 +1,96 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Pandoc UI
+Name[zh_CN]=Pandoc UI 文档转换器
+Name[ja_JP]=Pandoc UI
+Name[ko_KR]=Pandoc UI
+Name[fr_FR]=Pandoc UI
+Name[de_DE]=Pandoc UI
+Name[es_ES]=Pandoc UI
+Name[zh_TW]=Pandoc UI 文件轉換器
+GenericName=Document Converter
+GenericName[zh_CN]=文档格式转换器
+GenericName[ja_JP]=ドキュメント変換ツール
+GenericName[ko_KR]=문서 변환기
+GenericName[fr_FR]=Convertisseur de Documents
+GenericName[de_DE]=Dokument-Konverter
+GenericName[es_ES]=Convertidor de Documentos
+GenericName[zh_TW]=文件格式轉換器
+Comment=Convert documents between various formats using Pandoc
+Comment[zh_CN]=使用 Pandoc 在各种格式之间转换文档
+Comment[ja_JP]=Pandocを使用して様々な形式間でドキュメントを変換
+Comment[ko_KR]=Pandoc을 사용하여 다양한 형식 간에 문서를 변환합니다
+Comment[fr_FR]=Convertir des documents entre différents formats avec Pandoc
+Comment[de_DE]=Dokumente zwischen verschiedenen Formaten mit Pandoc konvertieren
+Comment[es_ES]=Convertir documentos entre varios formatos usando Pandoc
+Comment[zh_TW]=使用 Pandoc 在各種格式之間轉換文件
+Exec=pandoc-ui %F
+Icon=pandoc-ui
+Terminal=false
+Categories=Office;Publishing;TextEditor;Utility;
+MimeType=text/markdown;text/x-markdown;text/x-rst;text/restructuredtext;text/x-tex;application/x-latex;text/x-asciidoc;text/plain;text/x-textile;application/x-docbook+xml;application/vnd.oasis.opendocument.text;application/rtf;application/epub+zip;
+Keywords=pandoc;converter;markdown;latex;html;pdf;docx;epub;document;format;text;
+Keywords[zh_CN]=pandoc;转换器;markdown;latex;html;pdf;docx;epub;文档;格式;文本;
+Keywords[ja_JP]=pandoc;変換;markdown;latex;html;pdf;docx;epub;文書;形式;テキスト;
+Keywords[ko_KR]=pandoc;변환기;markdown;latex;html;pdf;docx;epub;문서;형식;텍스트;
+Keywords[fr_FR]=pandoc;convertisseur;markdown;latex;html;pdf;docx;epub;document;format;texte;
+Keywords[de_DE]=pandoc;konverter;markdown;latex;html;pdf;docx;epub;dokument;format;text;
+Keywords[es_ES]=pandoc;convertidor;markdown;latex;html;pdf;docx;epub;documento;formato;texto;
+Keywords[zh_TW]=pandoc;轉換器;markdown;latex;html;pdf;docx;epub;文件;格式;文字;
+StartupNotify=true
+StartupWMClass=pandoc-ui
+X-Desktop-File-Install-Version=0.24
+X-AppImage-Version=1.0.0
+
+# Additional metadata for AppImage integration
+X-AppImage-Name=Pandoc UI
+X-AppImage-Comment=Professional document format conversion tool
+X-AppImage-Arch=x86_64
+
+# File association actions
+Actions=ConvertMarkdown;ConvertTeX;ConvertHTML;BatchConvert;
+
+[Desktop Action ConvertMarkdown]
+Name=Convert Markdown File
+Name[zh_CN]=转换 Markdown 文件
+Name[ja_JP]=Markdownファイルを変換
+Name[ko_KR]=마크다운 파일 변환
+Name[fr_FR]=Convertir fichier Markdown
+Name[de_DE]=Markdown-Datei konvertieren
+Name[es_ES]=Convertir archivo Markdown
+Name[zh_TW]=轉換 Markdown 文件
+Exec=pandoc-ui --input-format=markdown %f
+
+[Desktop Action ConvertTeX]
+Name=Convert LaTeX/TeX File
+Name[zh_CN]=转换 LaTeX/TeX 文件
+Name[ja_JP]=LaTeX/TeXファイルを変換
+Name[ko_KR]=LaTeX/TeX 파일 변환
+Name[fr_FR]=Convertir fichier LaTeX/TeX
+Name[de_DE]=LaTeX/TeX-Datei konvertieren
+Name[es_ES]=Convertir archivo LaTeX/TeX
+Name[zh_TW]=轉換 LaTeX/TeX 文件
+Exec=pandoc-ui --input-format=latex %f
+
+[Desktop Action ConvertHTML]
+Name=Convert HTML File
+Name[zh_CN]=转换 HTML 文件
+Name[ja_JP]=HTMLファイルを変換
+Name[ko_KR]=HTML 파일 변환
+Name[fr_FR]=Convertir fichier HTML
+Name[de_DE]=HTML-Datei konvertieren
+Name[es_ES]=Convertir archivo HTML
+Name[zh_TW]=轉換 HTML 文件
+Exec=pandoc-ui --input-format=html %f
+
+[Desktop Action BatchConvert]
+Name=Batch Convert Folder
+Name[zh_CN]=批量转换文件夹
+Name[ja_JP]=フォルダを一括変換
+Name[ko_KR]=폴더 일괄 변환
+Name[fr_FR]=Conversion par lots du dossier
+Name[de_DE]=Ordner stapelweise konvertieren
+Name[es_ES]=Conversión por lotes de carpeta
+Name[zh_TW]=批次轉換資料夾
+Exec=pandoc-ui --batch %F

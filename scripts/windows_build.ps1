@@ -9,15 +9,62 @@
 
 param(
     [switch]$Standalone,    # Build as standalone directory instead of single file
-    [switch]$EnableConsole  # Enable console window for debugging
+    [switch]$EnableConsole, # Enable console window for debugging
+    [switch]$NoStrip,       # Skip binary optimization
+    [ValidateSet("Conservative", "Moderate", "Aggressive")]
+    [string]$StripLevel = "Conservative",  # Strip optimization level
+    [switch]$CreateInstaller, # Create NSIS installer after building
+    [switch]$Help           # Show help message
 )
 
 $ErrorActionPreference = "Stop"
 
+# Show help if requested
+if ($Help) {
+    Write-Host @"
+
+Windows Build Script for pandoc-ui
+
+USAGE:
+    .\scripts\windows_build.ps1 [OPTIONS]
+
+OPTIONS:
+    -Standalone             Build as standalone directory instead of single file
+    -EnableConsole          Enable console window for debugging
+    -NoStrip                Skip binary optimization with strip
+    -StripLevel <level>     Set strip optimization level (Conservative, Moderate, Aggressive)
+                           Default: Conservative
+    -CreateInstaller        Create professional NSIS installer after building
+    -Help                   Show this help message
+
+STRIP LEVELS:
+    Conservative           Safe for PySide6 applications (5-15% reduction)
+    Moderate              Test before production (10-25% reduction)  
+    Aggressive            High risk for Qt apps (15-40% reduction)
+
+EXAMPLES:
+    .\scripts\windows_build.ps1                                    # Build with conservative optimization
+    .\scripts\windows_build.ps1 -NoStrip                          # Build without optimization
+    .\scripts\windows_build.ps1 -StripLevel Moderate             # Build with moderate optimization
+    .\scripts\windows_build.ps1 -Standalone -EnableConsole       # Standalone build with console
+    .\scripts\windows_build.ps1 -CreateInstaller                 # Build and create installer
+    .\scripts\windows_build.ps1 -CreateInstaller -StripLevel Moderate # Optimized installer
+
+NOTES:
+    - CreateInstaller requires NSIS (auto-downloads if not found)
+    - Installer includes Modern UI, file associations, and context menu integration
+    - Use CreateInstaller for professional Windows distribution packages
+
+"@ -ForegroundColor White
+    exit 0
+}
+
 $BuildMode = if ($Standalone) { "standalone directory" } else { "single file" }
 $ConsoleMode = if ($EnableConsole) { "with console" } else { "GUI only" }
+$OptimizeMode = if ($NoStrip) { "no optimization" } else { "strip optimization: $StripLevel" }
+$InstallerMode = if ($CreateInstaller) { "with installer" } else { "no installer" }
 
-Write-Host "🪟 Building pandoc-ui for Windows ($BuildMode, $ConsoleMode)..." -ForegroundColor Yellow
+Write-Host "🪟 Building pandoc-ui for Windows ($BuildMode, $ConsoleMode, $OptimizeMode, $InstallerMode)..." -ForegroundColor Yellow
 
 # Check if uv is available
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
@@ -190,8 +237,9 @@ try {
             Write-Host "📊 File size: $FileSize MB" -ForegroundColor White
         }
         
-        # Test if the executable works
+        # Test if the executable works before optimization
         Write-Host "🧪 Testing executable..." -ForegroundColor Cyan
+        $ExecutableWorks = $false
         try {
             if ($EnableConsole) {
                 # For console builds, test with --help and show debug info
@@ -200,6 +248,7 @@ try {
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "✅ Executable test passed" -ForegroundColor Green
                     Write-Host "🔧 To run with debug console: $ExecutablePath --debug" -ForegroundColor Yellow
+                    $ExecutableWorks = $true
                 } else {
                     Write-Host "⚠️  Executable test failed, but build completed" -ForegroundColor Yellow
                     Write-Host "🔧 Try running with: $ExecutablePath --debug" -ForegroundColor Yellow
@@ -210,12 +259,52 @@ try {
                     Write-Host "✅ Executable created successfully" -ForegroundColor Green
                     Write-Host "ℹ️  GUI-only build - test by running manually" -ForegroundColor Cyan
                     Write-Host "🔧 For debugging, run: $ExecutablePath --debug" -ForegroundColor Cyan
+                    $ExecutableWorks = $true
                 } else {
                     Write-Host "⚠️  Executable not found" -ForegroundColor Yellow
                 }
             }
         } catch {
             Write-Host "⚠️  Could not test executable, but build completed" -ForegroundColor Yellow
+        }
+        
+        # Binary optimization with strip
+        if (-not $NoStrip) {
+            Write-Host ""
+            Write-Host "🔧 Optimizing binary with strip (level: $StripLevel)..." -ForegroundColor Cyan
+            
+            # Check if strip optimization script exists
+            $StripScript = "scripts\strip_optimize.ps1"
+            if (Test-Path $StripScript) {
+                try {
+                    # Run strip optimization
+                    if ($ExecutableWorks) {
+                        # Use verification if the executable was working before
+                        & $StripScript -BinaryPath $ExecutablePath -Level $StripLevel -Verify
+                    } else {
+                        # Skip verification if executable wasn't working before
+                        & $StripScript -BinaryPath $ExecutablePath -Level $StripLevel
+                    }
+                    
+                    # Update file size after optimization
+                    if ($Standalone) {
+                        $DirSize = [math]::Round((Get-ChildItem $OutputPath -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB, 2)
+                        Write-Host "📊 Optimized directory size: $DirSize MB" -ForegroundColor White
+                    } else {
+                        $FileSize = [math]::Round((Get-Item $OutputPath).Length / 1MB, 2)
+                        Write-Host "📊 Optimized file size: $FileSize MB" -ForegroundColor White
+                    }
+                } catch {
+                    Write-Host "⚠️  Strip optimization failed: $($_.Exception.Message)" -ForegroundColor Yellow
+                    Write-Host "💡 Continuing with unoptimized binary" -ForegroundColor Cyan
+                }
+            } else {
+                Write-Host "⚠️  Strip optimization script not found: $StripScript" -ForegroundColor Yellow
+                Write-Host "💡 Strip optimization skipped" -ForegroundColor Cyan
+            }
+        } else {
+            Write-Host ""
+            Write-Host "ℹ️  Binary optimization skipped (-NoStrip specified)" -ForegroundColor Cyan
         }
         
         Write-Host ""
@@ -232,6 +321,16 @@ try {
         Write-Host "   - No additional dependencies required" -ForegroundColor Gray
         Write-Host "   - No Python installation required on target systems" -ForegroundColor Gray
         
+        if (-not $NoStrip) {
+            Write-Host ""
+            Write-Host "🔧 Optimization applied:" -ForegroundColor White
+            Write-Host "   - Strip level: $StripLevel" -ForegroundColor Gray
+            Write-Host "   - Binary size optimized" -ForegroundColor Gray
+            if ($StripLevel -ne "Conservative") {
+                Write-Host "   - UPX compression may trigger antivirus warnings" -ForegroundColor Yellow
+            }
+        }
+        
         Write-Host ""
         Write-Host "🐛 Debug Info:" -ForegroundColor Yellow
         if ($EnableConsole) {
@@ -240,6 +339,50 @@ try {
         Write-Host "   - Run with --debug flag to see detailed error messages:" -ForegroundColor Gray
         Write-Host "     $ExecutablePath --debug" -ForegroundColor Cyan
         Write-Host "   - This will allocate a console window and show all log output" -ForegroundColor Gray
+        
+        # Create installer if requested
+        if ($CreateInstaller) {
+            Write-Host ""
+            Write-Host "🏗️  Creating Windows Installer..." -ForegroundColor Yellow
+            
+            # Check if installer build script exists
+            $InstallerScript = "scripts\build_installer.ps1"
+            if (Test-Path $InstallerScript) {
+                try {
+                    # Run installer build (it will use our already built binary)
+                    & $InstallerScript -Version $Version -SkipBuild
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        # Find the created installer
+                        $InstallerFile = "dist\pandoc-ui-installer-$Version.exe"
+                        if (Test-Path $InstallerFile) {
+                            $InstallerSize = [math]::Round((Get-Item $InstallerFile).Length / 1MB, 2)
+                            Write-Host ""
+                            Write-Host "✅ Installer created successfully!" -ForegroundColor Green
+                            Write-Host "📁 Installer: $InstallerFile" -ForegroundColor White
+                            Write-Host "📊 Installer size: $InstallerSize MB" -ForegroundColor White
+                            Write-Host ""
+                            Write-Host "💡 Installer distribution:" -ForegroundColor White
+                            Write-Host "   - Professional Windows installer with Modern UI" -ForegroundColor Gray
+                            Write-Host "   - File associations and context menu integration" -ForegroundColor Gray
+                            Write-Host "   - Silent installation: $InstallerFile /S" -ForegroundColor Gray
+                            Write-Host "   - Custom directory: $InstallerFile /S /D=C:\MyPath" -ForegroundColor Gray
+                        } else {
+                            Write-Host "⚠️  Installer file not found after build" -ForegroundColor Yellow
+                        }
+                    } else {
+                        Write-Host "⚠️  Installer creation failed, but main build succeeded" -ForegroundColor Yellow
+                        Write-Host "💡 Try running: .\scripts\build_installer.ps1 -Version $Version" -ForegroundColor Cyan
+                    }
+                } catch {
+                    Write-Host "⚠️  Installer creation error: $($_.Exception.Message)" -ForegroundColor Yellow
+                    Write-Host "💡 Try running: .\scripts\build_installer.ps1 -Version $Version" -ForegroundColor Cyan
+                }
+            } else {
+                Write-Host "⚠️  Installer build script not found: $InstallerScript" -ForegroundColor Yellow
+                Write-Host "💡 Installer creation skipped" -ForegroundColor Cyan
+            }
+        }
         
     } else {
         Write-Host "❌ Build failed! Output file not found." -ForegroundColor Red

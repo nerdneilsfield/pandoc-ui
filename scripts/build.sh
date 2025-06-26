@@ -5,6 +5,73 @@
 
 set -e
 
+# Parse command line arguments
+OPTIMIZE_BINARY=true
+STRIP_LEVEL="conservative"
+BUILD_APPIMAGE=false
+HELP=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --no-strip)
+            OPTIMIZE_BINARY=false
+            shift
+            ;;
+        --strip-level)
+            STRIP_LEVEL="$2"
+            shift 2
+            ;;
+        --appimage)
+            BUILD_APPIMAGE=true
+            shift
+            ;;
+        --help|-h)
+            HELP=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            HELP=true
+            shift
+            ;;
+    esac
+done
+
+if [[ "$HELP" = true ]]; then
+    cat << EOF
+Unix Build Script for pandoc-ui
+
+USAGE:
+    $0 [OPTIONS]
+
+OPTIONS:
+    --no-strip              Skip binary optimization with strip
+    --strip-level LEVEL     Set strip optimization level (conservative, moderate, aggressive)
+                           Default: conservative
+    --appimage              Build AppImage after creating binary (Linux only)
+    --help, -h              Show this help message
+
+STRIP LEVELS:
+    conservative           Safe for PySide6 applications (5-15% reduction)
+    moderate              Test before production (10-25% reduction)  
+    aggressive            High risk for Qt apps (15-40% reduction)
+
+EXAMPLES:
+    $0                                    # Build with conservative optimization
+    $0 --no-strip                        # Build without optimization
+    $0 --strip-level moderate           # Build with moderate optimization
+    $0 --appimage                        # Build binary and create AppImage
+    $0 --appimage --strip-level moderate # Build optimized AppImage
+
+NOTES:
+    - AppImage creation requires Linux and downloads required tools automatically
+    - AppImage includes all dependencies and runs on most Linux distributions
+    - Use --appimage for distribution-ready Linux packages
+
+EOF
+    exit 0
+fi
+
 # Detect platform
 PLATFORM=""
 case "$(uname -s)" in
@@ -184,12 +251,46 @@ if [ -f "$DIST_DIR/$OUTPUT_FILE" ]; then
     # Make executable
     chmod +x "$DIST_DIR/$OUTPUT_FILE"
     
-    # Test if the executable works
+    # Test if the executable works before optimization
     echo "🧪 Testing executable..."
     if "$DIST_DIR/$OUTPUT_FILE" --help > /dev/null 2>&1; then
         echo "✅ Executable test passed"
+        EXECUTABLE_WORKS=true
     else
         echo "⚠️  Executable test failed, but build completed"
+        EXECUTABLE_WORKS=false
+    fi
+    
+    # Binary optimization with strip
+    if [[ "$OPTIMIZE_BINARY" = true ]]; then
+        echo ""
+        echo "🔧 Optimizing binary with strip (level: $STRIP_LEVEL)..."
+        
+        # Check if strip optimization script exists
+        STRIP_SCRIPT="$SCRIPT_DIR/strip_optimize.sh"
+        if [[ -f "$STRIP_SCRIPT" ]]; then
+            # Make strip script executable
+            chmod +x "$STRIP_SCRIPT"
+            
+            # Run strip optimization
+            if [[ "$EXECUTABLE_WORKS" = true ]]; then
+                # Use verification if the executable was working before
+                "$STRIP_SCRIPT" --verify "$DIST_DIR/$OUTPUT_FILE" "$STRIP_LEVEL"
+            else
+                # Skip verification if executable wasn't working before
+                "$STRIP_SCRIPT" "$DIST_DIR/$OUTPUT_FILE" "$STRIP_LEVEL"
+            fi
+            
+            # Update file size after optimization
+            FILE_SIZE=$(du -h "$DIST_DIR/$OUTPUT_FILE" | cut -f1)
+            echo "📊 Optimized file size: $FILE_SIZE"
+        else
+            echo "⚠️  Strip optimization script not found: $STRIP_SCRIPT"
+            echo "💡 Strip optimization skipped"
+        fi
+    else
+        echo ""
+        echo "ℹ️  Binary optimization skipped (--no-strip specified)"
     fi
     
     # Platform-specific post-build checks
@@ -216,6 +317,12 @@ if [ -f "$DIST_DIR/$OUTPUT_FILE" ]; then
         echo "   - Copy the executable to target Linux systems"
         echo "   - Ensure target systems have basic GUI libraries (Qt will be bundled)"
         echo "   - No Python installation required on target systems"
+        if [[ "$OPTIMIZE_BINARY" = true ]]; then
+            echo ""
+            echo "🔧 Optimization applied:"
+            echo "   - Strip level: $STRIP_LEVEL"
+            echo "   - Binary symbols optimized for smaller size"
+        fi
     elif [ "$PLATFORM" = "macos" ]; then
         echo "💡 To distribute:"
         echo "   - Copy the executable to target macOS systems"
@@ -226,6 +333,70 @@ if [ -f "$DIST_DIR/$OUTPUT_FILE" ]; then
         echo "🔧 Architecture compatibility:"
         echo "   - Built for: $ARCH"
         echo "   - Deployment target: $MACOSX_DEPLOYMENT_TARGET+"
+        if [[ "$OPTIMIZE_BINARY" = true ]]; then
+            echo ""
+            echo "🔧 Optimization applied:"
+            echo "   - Strip level: $STRIP_LEVEL"
+            echo "   - Binary symbols optimized for smaller size"
+        fi
+    fi
+    
+    # AppImage creation (Linux only)
+    if [[ "$BUILD_APPIMAGE" = true ]]; then
+        if [[ "$PLATFORM" = "linux" ]]; then
+            echo ""
+            echo "📦 Creating AppImage..."
+            
+            # Check if AppImage build script exists
+            APPIMAGE_SCRIPT="$SCRIPT_DIR/build_appimage.sh"
+            if [[ -f "$APPIMAGE_SCRIPT" ]]; then
+                # Make AppImage script executable
+                chmod +x "$APPIMAGE_SCRIPT"
+                
+                # Prepare AppImage build arguments
+                APPIMAGE_ARGS=("--version" "$VERSION")
+                
+                if [[ "$OPTIMIZE_BINARY" = false ]]; then
+                    APPIMAGE_ARGS+=("--no-strip")
+                else
+                    APPIMAGE_ARGS+=("--strip-level" "$STRIP_LEVEL")
+                fi
+                
+                # Run AppImage build (it will use our already built binary)
+                "$APPIMAGE_SCRIPT" "${APPIMAGE_ARGS[@]}"
+                
+                if [[ $? -eq 0 ]]; then
+                    # Find the created AppImage
+                    APPIMAGE_FILE="$DIST_DIR/pandoc-ui-$VERSION-x86_64.AppImage"
+                    if [[ -f "$APPIMAGE_FILE" ]]; then
+                        APPIMAGE_SIZE=$(du -h "$APPIMAGE_FILE" | cut -f1)
+                        echo ""
+                        echo "✅ AppImage created successfully!"
+                        echo "📁 AppImage: $APPIMAGE_FILE"
+                        echo "📊 AppImage size: $APPIMAGE_SIZE"
+                        echo ""
+                        echo "💡 AppImage distribution:"
+                        echo "   - Copy the .AppImage file to target Linux systems"
+                        echo "   - Make executable: chmod +x $(basename "$APPIMAGE_FILE")"
+                        echo "   - Run directly: ./$(basename "$APPIMAGE_FILE")"
+                        echo "   - No installation required"
+                        echo "   - Self-contained with all dependencies"
+                    else
+                        echo "⚠️  AppImage file not found after build"
+                    fi
+                else
+                    echo "⚠️  AppImage creation failed, but main build succeeded"
+                fi
+            else
+                echo "⚠️  AppImage build script not found: $APPIMAGE_SCRIPT"
+                echo "💡 AppImage creation skipped"
+            fi
+        else
+            echo ""
+            echo "⚠️  AppImage creation is only supported on Linux"
+            echo "💡 Current platform: $PLATFORM"
+            echo "💡 AppImage creation skipped"
+        fi
     fi
     
 else
