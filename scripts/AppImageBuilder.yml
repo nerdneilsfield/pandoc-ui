@@ -1,0 +1,213 @@
+# AppImageBuilder配置文件 for pandoc-ui
+# 使用appimage-builder构建Python PySide6应用
+
+version: 1
+
+script:
+  # 删除之前的构建
+  - rm -rf AppDir || true
+  
+  # 创建虚拟环境并安装依赖
+  - python3 -m venv AppDir/usr
+  - source AppDir/usr/bin/activate
+  - pip install --upgrade pip
+  - pip install .
+  
+  # 安装PySide6和其他运行时依赖
+  - pip install PySide6 pydantic
+  
+  # 生成翻译和资源文件
+  - bash scripts/generate_translations.sh || true
+  - bash scripts/generate_resources.sh || true
+  
+  # 创建启动脚本
+  - mkdir -p AppDir/usr/bin
+  - |
+    cat > AppDir/usr/bin/pandoc-ui << 'EOF'
+    #!/usr/bin/env python3
+    import sys
+    import os
+    
+    # 添加应用程序路径到Python路径
+    app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, os.path.join(app_dir, 'lib', 'python3.12', 'site-packages'))
+    
+    # 设置Qt环境变量
+    os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = os.path.join(app_dir, 'lib', 'python3.12', 'site-packages', 'PySide6', 'Qt', 'plugins', 'platforms')
+    os.environ['QT_PLUGIN_PATH'] = os.path.join(app_dir, 'lib', 'python3.12', 'site-packages', 'PySide6', 'Qt', 'plugins')
+    
+    # 导入并运行主应用程序
+    from pandoc_ui.main import main
+    main()
+    EOF
+  - chmod +x AppDir/usr/bin/pandoc-ui
+
+AppDir:
+  path: ./AppDir
+
+  app_info:
+    id: io.github.pandoc-ui
+    name: Pandoc UI
+    icon: pandoc-ui
+    version: !ENV ${VERSION:-"dev"}
+    exec: usr/bin/pandoc-ui
+    exec_args: $@
+
+  apt:
+    arch: amd64
+    sources:
+      - sourceline: 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse'
+        key_url: 'http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3B4FE6ACC0B21F32'
+      - sourceline: 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ focal-updates main restricted universe multiverse'
+      - sourceline: 'deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse'
+
+    include:
+      # 基础系统库
+      - libc6
+      - libgcc-s1
+      - libstdc++6
+      
+      # Python运行时
+      - python3.8
+      - python3.8-dev
+      - python3-pip
+      - python3-pkg-resources
+      
+      # Qt/GUI相关库
+      - libqt5gui5
+      - libqt5core5a
+      - libqt5widgets5
+      - libqt5network5
+      - libqt5dbus5
+      - libqt5svg5
+      
+      # PySide6相关依赖
+      - libxcb1
+      - libxcb-glx0
+      - libxcb-icccm4
+      - libxcb-image0
+      - libxcb-keysyms1
+      - libxcb-randr0
+      - libxcb-render0
+      - libxcb-render-util0
+      - libxcb-shape0
+      - libxcb-sync1
+      - libxcb-util1
+      - libxcb-xfixes0
+      - libxcb-xinerama0
+      - libxcb-xkb1
+      
+      # X11相关
+      - libx11-6
+      - libx11-xcb1
+      - libxext6
+      - libxrender1
+      - libxi6
+      - libxrandr2
+      - libxss1
+      - libxtst6
+      
+      # 字体和渲染
+      - libfontconfig1
+      - libfreetype6
+      - libharfbuzz0b
+      
+      # 音频系统
+      - libasound2
+      - libpulse0
+      - libasound2-data
+      
+      # 其他GUI依赖
+      - libgl1-mesa-glx
+      - libglu1-mesa
+      - libegl1-mesa
+      - libdrm2
+      - libgbm1
+      
+      # 网络和安全
+      - libnss3
+      - libssl1.1
+      - ca-certificates
+      
+      # 文件系统和工具
+      - libglib2.0-0
+      - libdbus-1-3
+      - libsystemd0
+      
+    exclude:
+      # 排除不必要的包以减小体积
+      - humanity-icon-theme
+      - hicolor-icon-theme
+      - adwaita-icon-theme
+      - ubuntu-mono
+      - gnome-icon-theme
+      - sound-theme-freedesktop
+
+  files:
+    include:
+      # 包含应用程序文件
+      - usr/bin/pandoc-ui
+      - usr/lib/python3.*/site-packages/pandoc_ui
+      - usr/lib/python3.*/site-packages/PySide6
+      - usr/lib/python3.*/site-packages/pydantic
+      
+    exclude:
+      # 排除不必要的文件
+      - usr/share/man
+      - usr/share/doc
+      - usr/share/lintian
+      - usr/share/linda
+      - usr/lib/python3.*/site-packages/*/tests
+      - usr/lib/python3.*/site-packages/*/*/tests
+      - usr/lib/python3.*/site-packages/*/__pycache__
+      - usr/lib/python3.*/site-packages/*/*/__pycache__
+      - "*.pyc"
+      - "*.pyo"
+
+  runtime:
+    env:
+      # Python环境变量
+      PYTHONPATH: '$APPDIR/usr/lib/python3.8/site-packages:$PYTHONPATH'
+      PYTHONHOME: '$APPDIR/usr'
+      
+      # Qt环境变量
+      QT_QPA_PLATFORM_PLUGIN_PATH: '$APPDIR/usr/lib/python3.8/site-packages/PySide6/Qt/plugins/platforms'
+      QT_PLUGIN_PATH: '$APPDIR/usr/lib/python3.8/site-packages/PySide6/Qt/plugins'
+      QML2_IMPORT_PATH: '$APPDIR/usr/lib/python3.8/site-packages/PySide6/Qt/qml'
+      
+      # 库路径
+      LD_LIBRARY_PATH: '$APPDIR/usr/lib:$APPDIR/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH'
+      
+      # 字体配置
+      FONTCONFIG_PATH: '$APPDIR/usr/share/fontconfig/conf'
+      
+      # 禁用Qt主题以避免沙盒问题
+      QT_QPA_PLATFORMTHEME: ''
+
+  test:
+    fedora-30:
+      image: appimagecrafters/tests-env:fedora-30
+      command: ./AppRun --help
+      use_host_x: true
+    debian-stable:
+      image: appimagecrafters/tests-env:debian-stable
+      command: ./AppRun --help
+      use_host_x: true
+    archlinux-latest:
+      image: appimagecrafters/tests-env:archlinux-latest
+      command: ./AppRun --help
+      use_host_x: true
+    centos-7:
+      image: appimagecrafters/tests-env:centos-7
+      command: ./AppRun --help
+      use_host_x: true
+    ubuntu-xenial:
+      image: appimagecrafters/tests-env:ubuntu-xenial
+      command: ./AppRun --help
+      use_host_x: true
+
+AppImage:
+  update-information: None
+  sign-key: None
+  arch: x86_64
+  file_name: pandoc-ui-!ENV:VERSION!-x86_64.AppImage
