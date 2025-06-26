@@ -196,23 +196,19 @@ try {
     # Note: LTO is enabled by default for all levels as it's safe and effective
     $NuitkaArgs += "--lto=yes"
     
-    # Memory management and performance options
-    $NuitkaArgs += "--low-memory"
-    $NuitkaArgs += "--jobs=1"
-    
     switch ($StripLevel) {
         "Conservative" {
             # Default Nuitka behavior with LTO
-            Write-Host "🔧 Using conservative optimization (LTO + low memory mode)" -ForegroundColor Cyan
+            Write-Host "🔧 Using conservative optimization (LTO enabled)" -ForegroundColor Cyan
         }
         "Moderate" {
             # Add additional moderate optimizations
-            Write-Host "🔧 Using moderate optimization (LTO + enhanced optimizations + low memory)" -ForegroundColor Cyan
+            Write-Host "🔧 Using moderate optimization (LTO + enhanced optimizations)" -ForegroundColor Cyan
             # Additional flags can be added here as Nuitka develops
         }
         "Aggressive" {
             # Maximum optimization
-            Write-Host "🔧 Using aggressive optimization (LTO + maximum optimizations + low memory)" -ForegroundColor Cyan
+            Write-Host "🔧 Using aggressive optimization (LTO + maximum optimizations)" -ForegroundColor Cyan
             # More aggressive flags can be added here as Nuitka develops
         }
     }
@@ -246,15 +242,84 @@ try {
     & uv @NuitkaArgs
 
     # Check if build was successful
-    if ($Standalone) {
-        $OutputPath = $OutputDir
-        $ExecutablePath = Join-Path $OutputPath "pandoc-ui-windows-$Version.exe"
+    Write-Host ""
+    Write-Host "🔍 Checking build output in $DistDir..." -ForegroundColor Cyan
+    Write-Host "Expected output file/dir: $OutputFile" -ForegroundColor Cyan
+    
+    if (Test-Path $DistDir) {
+        Write-Host "Contents of $DistDir:" -ForegroundColor Cyan
+        Get-ChildItem $DistDir | Format-Table Name, Length, LastWriteTime -AutoSize
     } else {
-        $OutputPath = Join-Path $DistDir $OutputFile
-        $ExecutablePath = $OutputPath
+        Write-Host "❌ Directory $DistDir does not exist" -ForegroundColor Red
     }
     
-    if (Test-Path $OutputPath) {
+    $BuildSuccess = $false
+    
+    if ($Standalone) {
+        # For standalone mode, try multiple possible paths
+        $PossiblePaths = @(
+            $OutputDir,                                    # Our expected path
+            "$DistDir\$OutputFile.dist",                  # Nuitka default with .dist suffix
+            "$DistDir\main.dist"                          # Default when using main.py
+        )
+        
+        foreach ($path in $PossiblePaths) {
+            if (Test-Path $path -PathType Container) {
+                Write-Host "✅ Found standalone directory: $path" -ForegroundColor Green
+                $BuildSuccess = $true
+                $OutputPath = $path
+                
+                # Look for executable inside the directory
+                $PossibleExecutables = @(
+                    "$path\pandoc-ui-windows-$Version.exe",
+                    "$path\main.exe",
+                    "$path\pandoc_ui.exe",
+                    "$path\$((Split-Path $path -Leaf)).exe"
+                )
+                
+                foreach ($exe in $PossibleExecutables) {
+                    if (Test-Path $exe -PathType Leaf) {
+                        Write-Host "✅ Found executable: $exe" -ForegroundColor Green
+                        $ExecutablePath = $exe
+                        break
+                    }
+                }
+                
+                # If no specific executable found, find any .exe file
+                if (-not $ExecutablePath) {
+                    $ExecutablePath = Get-ChildItem $path -Filter "*.exe" | Select-Object -First 1 -ExpandProperty FullName
+                    if ($ExecutablePath) {
+                        Write-Host "✅ Found executable: $ExecutablePath" -ForegroundColor Green
+                    }
+                }
+                break
+            }
+        }
+    } else {
+        # For onefile mode, check for single executable file
+        $PossibleFiles = @(
+            (Join-Path $DistDir $OutputFile),
+            "$DistDir\main.exe",
+            "$DistDir\pandoc_ui.exe"
+        )
+        
+        foreach ($file in $PossibleFiles) {
+            if (Test-Path $file -PathType Leaf) {
+                Write-Host "✅ Found onefile executable: $file" -ForegroundColor Green
+                $BuildSuccess = $true
+                $OutputPath = $file
+                $ExecutablePath = $file
+                break
+            }
+        }
+    }
+    
+    if (-not $BuildSuccess) {
+        Write-Host "❌ No build output found. Checking for any pandoc-ui related files..." -ForegroundColor Red
+        Get-ChildItem $DistDir -Recurse -Include "*pandoc*", "*main*" | Select-Object FullName | Format-Table -AutoSize
+    }
+    
+    if ($BuildSuccess) {
         Write-Host ""
         Write-Host "✅ Build successful!" -ForegroundColor Green
         Write-Host "📁 Output: $OutputPath" -ForegroundColor White

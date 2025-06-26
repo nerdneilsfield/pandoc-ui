@@ -238,23 +238,19 @@ NUITKA_ARGS=(
 # Note: LTO is enabled by default for all levels as it's safe and effective
 NUITKA_ARGS+=(--lto=yes)
 
-# Memory management and performance options
-NUITKA_ARGS+=(--low-memory)
-NUITKA_ARGS+=(--jobs=1)
-
 case "$STRIP_LEVEL" in
     conservative)
         # Default Nuitka behavior with LTO
-        echo "🔧 Using conservative optimization (LTO + low memory mode)"
+        echo "🔧 Using conservative optimization (LTO enabled)"
         ;;
     moderate)
         # Add additional moderate optimizations
-        echo "🔧 Using moderate optimization (LTO + enhanced optimizations + low memory)"
+        echo "🔧 Using moderate optimization (LTO + enhanced optimizations)"
         # Additional flags can be added here as Nuitka develops
         ;;
     aggressive)
         # Maximum optimization
-        echo "🔧 Using aggressive optimization (LTO + maximum optimizations + low memory)"
+        echo "🔧 Using aggressive optimization (LTO + maximum optimizations)"
         # More aggressive flags can be added here as Nuitka develops
         ;;
 esac
@@ -274,20 +270,76 @@ uv run python -m nuitka "${NUITKA_ARGS[@]}" pandoc_ui/main.py
 
 # Check if build was successful
 BUILD_SUCCESS=false
+
+echo "🔍 Checking build output in $DIST_DIR..."
+echo "Expected output file/dir: $OUTPUT_FILE"
+echo "Contents of $DIST_DIR:"
+ls -la "$DIST_DIR/" || echo "Directory does not exist"
+
 if [ "$BUILD_MODE" = "standalone" ]; then
-    # For standalone mode, check for directory
-    if [ -d "$DIST_DIR/$OUTPUT_FILE" ]; then
-        BUILD_SUCCESS=true
-        OUTPUT_PATH="$DIST_DIR/$OUTPUT_FILE"
-        EXECUTABLE_PATH="$OUTPUT_PATH/$OUTPUT_FILE"
-    fi
+    # For standalone mode, Nuitka might create different directory structures
+    # Try multiple possible locations
+    POSSIBLE_PATHS=(
+        "$DIST_DIR/$OUTPUT_FILE"           # Our expected path
+        "$DIST_DIR/$OUTPUT_FILE.dist"      # Nuitka default with .dist suffix
+        "$DIST_DIR/main.dist"              # Default when using main.py
+    )
+    
+    for path in "${POSSIBLE_PATHS[@]}"; do
+        if [ -d "$path" ]; then
+            echo "✅ Found standalone directory: $path"
+            BUILD_SUCCESS=true
+            OUTPUT_PATH="$path"
+            
+            # Look for executable inside the directory
+            POSSIBLE_EXECUTABLES=(
+                "$path/$OUTPUT_FILE"
+                "$path/main"
+                "$path/pandoc_ui"
+                "$path/$(basename "$path")"
+            )
+            
+            for exe in "${POSSIBLE_EXECUTABLES[@]}"; do
+                if [ -f "$exe" ] && [ -x "$exe" ]; then
+                    echo "✅ Found executable: $exe"
+                    EXECUTABLE_PATH="$exe"
+                    break
+                fi
+            done
+            
+            # If no specific executable found, find any executable
+            if [ -z "$EXECUTABLE_PATH" ]; then
+                EXECUTABLE_PATH=$(find "$path" -type f -executable | head -1)
+                if [ -n "$EXECUTABLE_PATH" ]; then
+                    echo "✅ Found executable: $EXECUTABLE_PATH"
+                fi
+            fi
+            break
+        fi
+    done
 else
-    # For onefile mode, check for single executable
-    if [ -f "$DIST_DIR/$OUTPUT_FILE" ]; then
-        BUILD_SUCCESS=true
-        OUTPUT_PATH="$DIST_DIR/$OUTPUT_FILE"
-        EXECUTABLE_PATH="$OUTPUT_PATH"
-    fi
+    # For onefile mode, check for single executable file
+    POSSIBLE_FILES=(
+        "$DIST_DIR/$OUTPUT_FILE"
+        "$DIST_DIR/$OUTPUT_FILE.exe"
+        "$DIST_DIR/main"
+        "$DIST_DIR/main.exe"
+    )
+    
+    for file in "${POSSIBLE_FILES[@]}"; do
+        if [ -f "$file" ]; then
+            echo "✅ Found onefile executable: $file"
+            BUILD_SUCCESS=true
+            OUTPUT_PATH="$file"
+            EXECUTABLE_PATH="$file"
+            break
+        fi
+    done
+fi
+
+if [ "$BUILD_SUCCESS" = false ]; then
+    echo "❌ No build output found. Checking for any pandoc-ui related files..."
+    find "$DIST_DIR" -name "*pandoc*" -o -name "*main*" 2>/dev/null || echo "No related files found"
 fi
 
 if [ "$BUILD_SUCCESS" = true ]; then
