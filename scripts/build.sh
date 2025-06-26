@@ -238,19 +238,23 @@ NUITKA_ARGS=(
 # Note: LTO is enabled by default for all levels as it's safe and effective
 NUITKA_ARGS+=(--lto=yes)
 
+# Memory management and performance options
+NUITKA_ARGS+=(--low-memory)
+NUITKA_ARGS+=(--jobs=1)
+
 case "$STRIP_LEVEL" in
     conservative)
         # Default Nuitka behavior with LTO
-        echo "🔧 Using conservative optimization (LTO enabled by default)"
+        echo "🔧 Using conservative optimization (LTO + low memory mode)"
         ;;
     moderate)
         # Add additional moderate optimizations
-        echo "🔧 Using moderate optimization (LTO + enhanced optimizations)"
+        echo "🔧 Using moderate optimization (LTO + enhanced optimizations + low memory)"
         # Additional flags can be added here as Nuitka develops
         ;;
     aggressive)
         # Maximum optimization
-        echo "🔧 Using aggressive optimization (LTO + maximum optimizations)"
+        echo "🔧 Using aggressive optimization (LTO + maximum optimizations + low memory)"
         # More aggressive flags can be added here as Nuitka develops
         ;;
 esac
@@ -269,21 +273,44 @@ fi
 uv run python -m nuitka "${NUITKA_ARGS[@]}" pandoc_ui/main.py
 
 # Check if build was successful
-if [ -f "$DIST_DIR/$OUTPUT_FILE" ]; then
+BUILD_SUCCESS=false
+if [ "$BUILD_MODE" = "standalone" ]; then
+    # For standalone mode, check for directory
+    if [ -d "$DIST_DIR/$OUTPUT_FILE" ]; then
+        BUILD_SUCCESS=true
+        OUTPUT_PATH="$DIST_DIR/$OUTPUT_FILE"
+        EXECUTABLE_PATH="$OUTPUT_PATH/$OUTPUT_FILE"
+    fi
+else
+    # For onefile mode, check for single executable
+    if [ -f "$DIST_DIR/$OUTPUT_FILE" ]; then
+        BUILD_SUCCESS=true
+        OUTPUT_PATH="$DIST_DIR/$OUTPUT_FILE"
+        EXECUTABLE_PATH="$OUTPUT_PATH"
+    fi
+fi
+
+if [ "$BUILD_SUCCESS" = true ]; then
     echo ""
     echo "✅ Build successful!"
-    echo "📁 Output: $DIST_DIR/$OUTPUT_FILE"
+    echo "📁 Output: $OUTPUT_PATH"
     
     # Get file size
-    FILE_SIZE=$(du -h "$DIST_DIR/$OUTPUT_FILE" | cut -f1)
-    echo "📊 File size: $FILE_SIZE"
+    if [ "$BUILD_MODE" = "standalone" ]; then
+        DIR_SIZE=$(du -sh "$OUTPUT_PATH" | cut -f1)
+        echo "📊 Directory size: $DIR_SIZE"
+        echo "📄 Executable: $EXECUTABLE_PATH"
+    else
+        FILE_SIZE=$(du -h "$OUTPUT_PATH" | cut -f1)
+        echo "📊 File size: $FILE_SIZE"
+    fi
     
     # Make executable
-    chmod +x "$DIST_DIR/$OUTPUT_FILE"
+    chmod +x "$EXECUTABLE_PATH"
     
     # Test if the executable works before optimization
     echo "🧪 Testing executable..."
-    if "$DIST_DIR/$OUTPUT_FILE" --help > /dev/null 2>&1; then
+    if "$EXECUTABLE_PATH" --help > /dev/null 2>&1; then
         echo "✅ Executable test passed"
         EXECUTABLE_WORKS=true
     else
@@ -297,7 +324,7 @@ if [ -f "$DIST_DIR/$OUTPUT_FILE" ]; then
         echo "ℹ️  Post-build optimization analysis..."
         
         # Detect if this is a Nuitka onefile binary
-        if strings "$DIST_DIR/$OUTPUT_FILE" | grep -q "NUITKA_ONEFILE_PARENT\|__onefile_tmpdir__\|attached.*data"; then
+        if strings "$EXECUTABLE_PATH" | grep -q "NUITKA_ONEFILE_PARENT\|__onefile_tmpdir__\|attached.*data"; then
             echo "🔍 Detected Nuitka onefile binary"
             echo "⚠️  Post-build stripping DISABLED for onefile binaries"
             echo "💡 Nuitka onefile binaries contain attached data that would be corrupted by strip"
@@ -327,15 +354,20 @@ if [ -f "$DIST_DIR/$OUTPUT_FILE" ]; then
                 # Run strip optimization
                 if [[ "$EXECUTABLE_WORKS" = true ]]; then
                     # Use verification if the executable was working before
-                    "$STRIP_SCRIPT" --verify "$DIST_DIR/$OUTPUT_FILE" "$STRIP_LEVEL"
+                    "$STRIP_SCRIPT" --verify "$EXECUTABLE_PATH" "$STRIP_LEVEL"
                 else
                     # Skip verification if executable wasn't working before
-                    "$STRIP_SCRIPT" "$DIST_DIR/$OUTPUT_FILE" "$STRIP_LEVEL"
+                    "$STRIP_SCRIPT" "$EXECUTABLE_PATH" "$STRIP_LEVEL"
                 fi
                 
                 # Update file size after optimization
-                FILE_SIZE=$(du -h "$DIST_DIR/$OUTPUT_FILE" | cut -f1)
-                echo "📊 Optimized file size: $FILE_SIZE"
+                if [ "$BUILD_MODE" = "standalone" ]; then
+                    DIR_SIZE=$(du -sh "$OUTPUT_PATH" | cut -f1)
+                    echo "📊 Optimized directory size: $DIR_SIZE"
+                else
+                    FILE_SIZE=$(du -h "$OUTPUT_PATH" | cut -f1)
+                    echo "📊 Optimized file size: $FILE_SIZE"
+                fi
             else
                 echo "⚠️  Strip optimization script not found: $STRIP_SCRIPT"
                 echo "💡 Post-build strip optimization skipped"

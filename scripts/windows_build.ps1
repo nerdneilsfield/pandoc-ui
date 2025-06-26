@@ -196,19 +196,23 @@ try {
     # Note: LTO is enabled by default for all levels as it's safe and effective
     $NuitkaArgs += "--lto=yes"
     
+    # Memory management and performance options
+    $NuitkaArgs += "--low-memory"
+    $NuitkaArgs += "--jobs=1"
+    
     switch ($StripLevel) {
         "Conservative" {
             # Default Nuitka behavior with LTO
-            Write-Host "🔧 Using conservative optimization (LTO enabled by default)" -ForegroundColor Cyan
+            Write-Host "🔧 Using conservative optimization (LTO + low memory mode)" -ForegroundColor Cyan
         }
         "Moderate" {
             # Add additional moderate optimizations
-            Write-Host "🔧 Using moderate optimization (LTO + enhanced optimizations)" -ForegroundColor Cyan
+            Write-Host "🔧 Using moderate optimization (LTO + enhanced optimizations + low memory)" -ForegroundColor Cyan
             # Additional flags can be added here as Nuitka develops
         }
         "Aggressive" {
             # Maximum optimization
-            Write-Host "🔧 Using aggressive optimization (LTO + maximum optimizations)" -ForegroundColor Cyan
+            Write-Host "🔧 Using aggressive optimization (LTO + maximum optimizations + low memory)" -ForegroundColor Cyan
             # More aggressive flags can be added here as Nuitka develops
         }
     }

@@ -213,6 +213,8 @@ cd "$PROJECT_ROOT"
 
 BUILD_ARGS=("--standalone")
 # Force standalone mode for AppImage to avoid onefile strip corruption
+# Add memory management for large builds
+BUILD_ARGS+=("--low-memory")
 
 if [[ "$STRIP_BINARY" = false ]]; then
     BUILD_ARGS+=("--no-strip")
