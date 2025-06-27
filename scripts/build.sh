@@ -302,24 +302,45 @@ fi
 if [[ "$PLATFORM" = "macos" && "$UNIVERSAL_BINARY" = true ]]; then
     echo "🌍 Building universal binary using dual-arch approach..."
     
+    echo "🔍 Original Nuitka args:"
+    printf '%s\n' "${NUITKA_ARGS[@]}"
+    
     # Build for ARM64 (Apple Silicon)
     echo "🔨 Building ARM64 binary..."
-    ARM64_ARGS=("${NUITKA_ARGS[@]}")
-    # Remove existing target arch and add ARM64
-    ARM64_ARGS=($(printf '%s\n' "${ARM64_ARGS[@]}" | grep -v -- '--macos-target-arch'))
+    
+    # Create ARM64 args by copying base args and modifying
+    ARM64_ARGS=()
+    for arg in "${NUITKA_ARGS[@]}"; do
+        # Skip existing macos-target-arch and output-filename
+        if [[ "$arg" != --macos-target-arch=* && "$arg" != --output-filename=* ]]; then
+            ARM64_ARGS+=("$arg")
+        fi
+    done
     ARM64_ARGS+=(--macos-target-arch=arm64)
     ARM64_ARGS+=(--output-filename="$OUTPUT_FILE-arm64")
+    
+    echo "🔍 ARM64 build command preview:"
+    echo "uv run python -m nuitka ${ARM64_ARGS[*]} pandoc_ui/main.py"
     
     uv run python -m nuitka "${ARM64_ARGS[@]}" pandoc_ui/main.py
     ARM64_BUILD_SUCCESS=$?
     
     # Build for x86_64 (Intel)
     echo "🔨 Building x86_64 binary..."
-    X86_ARGS=("${NUITKA_ARGS[@]}")
-    # Remove existing target arch and add x86_64
-    X86_ARGS=($(printf '%s\n' "${X86_ARGS[@]}" | grep -v -- '--macos-target-arch'))
+    
+    # Create x86_64 args by copying base args and modifying
+    X86_ARGS=()
+    for arg in "${NUITKA_ARGS[@]}"; do
+        # Skip existing macos-target-arch and output-filename
+        if [[ "$arg" != --macos-target-arch=* && "$arg" != --output-filename=* ]]; then
+            X86_ARGS+=("$arg")
+        fi
+    done
     X86_ARGS+=(--macos-target-arch=x86_64)
     X86_ARGS+=(--output-filename="$OUTPUT_FILE-x86_64")
+    
+    echo "🔍 x86_64 build command preview:"
+    echo "uv run python -m nuitka ${X86_ARGS[*]} pandoc_ui/main.py"
     
     uv run python -m nuitka "${X86_ARGS[@]}" pandoc_ui/main.py
     X86_BUILD_SUCCESS=$?
