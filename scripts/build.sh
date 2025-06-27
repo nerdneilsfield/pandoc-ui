@@ -777,7 +777,13 @@ EOF
                 APP_BUNDLE_NAME="Pandoc UI.app"
                 APP_BUNDLE_PATH="$DIST_DIR/$APP_BUNDLE_NAME"
                 
-                if [[ ! -d "$APP_BUNDLE_PATH" ]]; then
+                echo "🔍 Checking for binary at: $DIST_DIR/$OUTPUT_FILE"
+                if [[ -f "$DIST_DIR/$OUTPUT_FILE" ]]; then
+                    echo "✅ Binary found, creating app bundle..."
+                    
+                    # Remove existing app bundle if it exists
+                    rm -rf "$APP_BUNDLE_PATH"
+                    
                     echo "📁 Creating app bundle structure for onefile binary..."
                     mkdir -p "$APP_BUNDLE_PATH/Contents/MacOS"
                     mkdir -p "$APP_BUNDLE_PATH/Contents/Resources"
@@ -785,6 +791,7 @@ EOF
                     # Copy the binary
                     cp "$DIST_DIR/$OUTPUT_FILE" "$APP_BUNDLE_PATH/Contents/MacOS/pandoc-ui"
                     chmod +x "$APP_BUNDLE_PATH/Contents/MacOS/pandoc-ui"
+                    echo "✅ Binary copied to app bundle"
                     
                     # Copy icon if available
                     if [[ -f "resources/icons/app.icns" ]]; then
@@ -824,12 +831,30 @@ EOF
 </dict>
 </plist>
 EOF
+                    echo "✅ App bundle created successfully"
+                else
+                    echo "❌ Binary not found at: $DIST_DIR/$OUTPUT_FILE"
+                    echo "🔍 Available files in $DIST_DIR:"
+                    ls -la "$DIST_DIR/" || echo "Directory does not exist"
+                    echo "⚠️  Cannot create DMG without binary"
+                    return 1
                 fi
             else
                 # For standalone mode, Nuitka should create the app bundle
                 APP_BUNDLE_NAME="Pandoc UI.app"
                 APP_BUNDLE_PATH="$DIST_DIR/$APP_BUNDLE_NAME"
             fi
+            
+            # Verify app bundle exists before creating DMG
+            if [[ ! -d "$APP_BUNDLE_PATH" ]]; then
+                echo "❌ App bundle not found at: $APP_BUNDLE_PATH"
+                echo "🔍 Available files in $DIST_DIR:"
+                ls -la "$DIST_DIR/" || echo "Directory does not exist"
+                echo "⚠️  Cannot create DMG without app bundle"
+                return 1
+            fi
+            
+            echo "✅ App bundle verified: $APP_BUNDLE_PATH"
             
             # Create DMG
             DMG_NAME="pandoc-ui-macos-$VERSION"
