@@ -248,6 +248,19 @@ build_app_cmdline() {
         --collect-submodules=PySide6
     )
     
+    # Exclude unnecessary modules that may cause universal binary issues
+    BUILD_ARGS+=(
+        --exclude-module=mypy
+        --exclude-module=pytest
+        --exclude-module=black
+        --exclude-module=ruff
+        --exclude-module=isort
+        --exclude-module=coverage
+        --exclude-module=setuptools
+        --exclude-module=pip
+        --exclude-module=wheel
+    )
+    
     # Additional optimization
     BUILD_ARGS+=(
         --optimize=2
@@ -267,8 +280,31 @@ build_app_cmdline() {
     if [[ $? -eq 0 ]]; then
         log_success "Application built successfully"
     else
-        log_error "Build failed"
-        exit 1
+        if [[ "$UNIVERSAL" == true ]]; then
+            log_warning "Universal binary build failed, trying current architecture only..."
+            
+            # Remove universal binary flag and retry
+            NEW_BUILD_ARGS=()
+            for arg in "${BUILD_ARGS[@]}"; do
+                if [[ "$arg" != "--target-arch=universal2" ]]; then
+                    NEW_BUILD_ARGS+=("$arg")
+                fi
+            done
+            
+            log_info "Retrying with current architecture only"
+            uv run pyinstaller "${NEW_BUILD_ARGS[@]}" "$MAIN_SCRIPT"
+            
+            if [[ $? -eq 0 ]]; then
+                log_success "Application built successfully (current architecture)"
+                log_warning "Note: This is not a universal binary"
+            else
+                log_error "Build failed even with current architecture"
+                exit 1
+            fi
+        else
+            log_error "Build failed"
+            exit 1
+        fi
     fi
 }
 

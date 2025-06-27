@@ -52,6 +52,22 @@ hiddenimports = [
 # Collect all PySide6 modules
 collect_submodules = ['PySide6']
 
+# Exclude unnecessary modules that may cause universal binary issues
+excludes = [
+    'mypy',
+    'pytest', 
+    'black',
+    'ruff',
+    'isort',
+    'coverage',
+    'setuptools',
+    'pip',
+    'wheel',
+    'distutils',
+    'tkinter',
+    'unittest',
+]
+
 # Analysis
 a = Analysis(
     [main_script],
@@ -62,7 +78,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=excludes,
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=None,
