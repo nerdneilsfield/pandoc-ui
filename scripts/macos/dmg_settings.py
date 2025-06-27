@@ -3,16 +3,17 @@
 
 import os
 
-# Get the directory containing this file
-_settings_dir = os.path.dirname(os.path.abspath(__file__))
-_project_root = os.path.dirname(os.path.dirname(_settings_dir))
+# Get paths - since __file__ is not available in exec context, use a different approach
+# The working directory should be the project root when this is executed
+_project_root = os.getcwd()
+_dist_dir = os.path.join(_project_root, "dist")
 
 # Application info
 app_name = "Pandoc UI"
 app_bundle = f"{app_name}.app"
 
 # Files to include in DMG
-files = [os.path.join(_project_root, "dist", app_bundle)]
+files = [os.path.join(_dist_dir, app_bundle)]
 
 # Create Applications symlink for easy installation
 symlinks = {
@@ -22,9 +23,12 @@ symlinks = {
 # Volume settings
 volume_name = app_name
 badge_icon = os.path.join(_project_root, "resources", "icons", "app.icns")
+if not os.path.exists(badge_icon):
+    badge_icon = None
 
 # Window appearance
-background = os.path.join(_settings_dir, "background.png")
+background_path = os.path.join(_project_root, "scripts", "macos", "background.png")
+background = background_path if os.path.exists(background_path) else None
 show_status_bar = False
 show_tab_view = False
 show_toolbar = False
