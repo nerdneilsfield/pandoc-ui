@@ -302,8 +302,48 @@ fi
 if [[ "$PLATFORM" = "macos" && "$UNIVERSAL_BINARY" = true ]]; then
     echo "🌍 Building universal binary using dual-arch approach..."
     
-    echo "🔍 Original Nuitka args:"
-    printf '%s\n' "${NUITKA_ARGS[@]}"
+    # Check if Python is universal
+    echo "🔍 Checking Python installation..."
+    PYTHON_ARCH=$(python3 -c "import platform; print(platform.machine())")
+    PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')")
+    
+    echo "   Python version: $PYTHON_VERSION"
+    echo "   Python architecture: $PYTHON_ARCH"
+    
+    # Check if this is a universal Python
+    if python3 -c "import platform; import sys; print('universal' in str(sys.version))" | grep -q "True"; then
+        echo "✅ Universal Python detected"
+        PYTHON_IS_UNIVERSAL=true
+    else
+        echo "⚠️  Non-universal Python detected"
+        PYTHON_IS_UNIVERSAL=false
+    fi
+    
+    if [[ "$PYTHON_IS_UNIVERSAL" = false ]]; then
+        echo ""
+        echo "❌ Cannot create universal binary with non-universal Python"
+        echo ""
+        echo "💡 Solutions:"
+        echo "   1. Install universal Python from python.org:"
+        echo "      https://www.python.org/downloads/macos/"
+        echo "      (Choose 'universal2' installer)"
+        echo ""
+        echo "   2. Use pyenv to install universal Python:"
+        echo "      pyenv install 3.12.8"
+        echo "      pyenv local 3.12.8"
+        echo ""
+        echo "   3. Build for current architecture only:"
+        echo "      ./scripts/build.sh --dmg"
+        echo ""
+        echo "🔄 Falling back to current architecture build..."
+        UNIVERSAL_BINARY=false
+        echo "🔨 Building for current architecture: $ARCH"
+        uv run python -m nuitka "${NUITKA_ARGS[@]}" pandoc_ui/main.py
+    else
+        echo "🔍 Original Nuitka args:"
+        printf '%s\n' "${NUITKA_ARGS[@]}"
+        
+        # Proceed with universal binary build using dual-arch approach
     
     # Build for ARM64 (Apple Silicon)
     echo "🔨 Building ARM64 binary..."
@@ -381,6 +421,7 @@ if [[ "$PLATFORM" = "macos" && "$UNIVERSAL_BINARY" = true ]]; then
         echo "   - ARM64 build: $([ $ARM64_BUILD_SUCCESS -eq 0 ] && echo "success" || echo "failed")"
         echo "   - x86_64 build: $([ $X86_BUILD_SUCCESS -eq 0 ] && echo "success" || echo "failed")"
     fi
+    fi  # End of universal Python check
 else
     # Standard single-architecture build
     echo "🔨 Building for single architecture..."
