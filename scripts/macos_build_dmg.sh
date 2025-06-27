@@ -214,23 +214,30 @@ build_app_cmdline() {
     fi
     
     # Add icon if available
-    if [[ -f "resources/icons/app.icns" ]]; then
-        BUILD_ARGS+=(--icon=resources/icons/app.icns)
+    ICON_PATH="$PROJECT_ROOT/resources/icons/app.icns"
+    if [[ -f "$ICON_PATH" ]]; then
+        BUILD_ARGS+=(--icon="$ICON_PATH")
+        log_info "Using app icon: $ICON_PATH"
+    else
+        log_warning "App icon not found at: $ICON_PATH"
     fi
     
-    # Add data files (only if they exist)
-    if [[ -d "resources" ]]; then
-        BUILD_ARGS+=(--add-data="resources:resources")
-        log_info "Including resources directory"
+    # Add data files (only if they exist) - use absolute paths
+    RESOURCES_PATH="$PROJECT_ROOT/resources"
+    LOCALES_PATH="$PROJECT_ROOT/pandoc_ui/locales"
+    
+    if [[ -d "$RESOURCES_PATH" ]]; then
+        BUILD_ARGS+=(--add-data="$RESOURCES_PATH:resources")
+        log_info "Including resources directory: $RESOURCES_PATH"
     else
-        log_warning "Resources directory not found, skipping"
+        log_warning "Resources directory not found at: $RESOURCES_PATH"
     fi
     
-    if [[ -d "pandoc_ui/locales" ]]; then
-        BUILD_ARGS+=(--add-data="pandoc_ui/locales:pandoc_ui/locales")
-        log_info "Including locales directory"
+    if [[ -d "$LOCALES_PATH" ]]; then
+        BUILD_ARGS+=(--add-data="$LOCALES_PATH:pandoc_ui/locales")
+        log_info "Including locales directory: $LOCALES_PATH"
     else
-        log_warning "Locales directory not found, skipping"
+        log_warning "Locales directory not found at: $LOCALES_PATH"
     fi
     
     # Add hidden imports for PySide6
@@ -247,8 +254,15 @@ build_app_cmdline() {
         --strip
     )
     
-    # Run PyInstaller
-    uv run pyinstaller "${BUILD_ARGS[@]}" pandoc_ui/main.py
+    # Debug: Show current directory and files
+    log_info "Current directory: $(pwd)"
+    log_info "Project root: $PROJECT_ROOT"
+    
+    # Run PyInstaller with absolute path to main script
+    MAIN_SCRIPT="$PROJECT_ROOT/pandoc_ui/main.py"
+    log_info "Main script: $MAIN_SCRIPT"
+    
+    uv run pyinstaller "${BUILD_ARGS[@]}" "$MAIN_SCRIPT"
     
     if [[ $? -eq 0 ]]; then
         log_success "Application built successfully"
