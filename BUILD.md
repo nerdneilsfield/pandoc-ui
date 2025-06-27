@@ -49,10 +49,21 @@ Choose the appropriate script for your platform:
 
 ### macOS
 
+#### Standard Build (Nuitka)
 - **Dependencies**: Xcode Command Line Tools (for code signing, optional)
 - **Output**: `dist/macos/pandoc-ui-macos-<version>`
 - **Code Signing**: Automatically detects and uses available Developer ID
 - **Compatibility**: Targets macOS 10.14+ (Mojave and later)
+
+#### DMG Distribution (PyInstaller - Recommended for Open Source)
+- **Script**: `./scripts/macos_build_dmg.sh`
+- **Dependencies**: None (unsigned distribution)
+- **Output**: `dist/pandoc-ui-macos.dmg`
+- **Features**: 
+  - Universal binary (Apple Silicon + Intel)
+  - Professional DMG with drag-to-install
+  - No Apple Developer account required
+  - Detailed user installation instructions
 
 ### Windows
 
@@ -161,11 +172,19 @@ Each build script automatically:
 - No Python installation required
 - Basic GUI libraries should be present (usually default)
 
-### macOS  
+### macOS
 
+#### Standard Binary Distribution
 - Copy executable to target systems
 - Users may need to allow execution: System Preferences > Security & Privacy
 - For wider distribution, code signing recommended
+
+#### DMG Distribution (Recommended for Open Source)
+- **Output**: `dist/pandoc-ui-macos.dmg`
+- **Features**: Professional disk image with drag-to-install interface
+- **No Code Signing Required**: Perfect for open source projects
+- **User Installation**: Simple drag-and-drop to Applications folder
+- **Gatekeeper Bypass**: Detailed instructions provided for users
 
 ### Windows
 
@@ -191,6 +210,148 @@ Each script builds for its host platform only. For cross-platform builds:
 
 - Use platform-specific CI/CD (GitHub Actions, etc.)
 - Or use virtual machines/containers for each target platform
+
+## macOS DMG Build Guide
+
+### Overview
+
+The macOS DMG build provides a professional distribution method for open source projects without requiring an Apple Developer account. This creates a universal binary that works on both Apple Silicon and Intel Macs.
+
+### Build Commands
+
+```bash
+# Basic DMG build for current architecture
+./scripts/macos_build_dmg.sh
+
+# Universal binary for both Apple Silicon and Intel
+./scripts/macos_build_dmg.sh --universal
+
+# Clean build with universal binary
+./scripts/macos_build_dmg.sh --universal --clean
+
+# Build without DMG (app bundle only)
+./scripts/macos_build_dmg.sh --no-dmg
+
+# Use PyInstaller spec file for advanced control
+./scripts/macos_build_dmg.sh --universal --use-spec
+```
+
+### Build Process
+
+1. **Dependency Installation**: Automatically installs PyInstaller and dmgbuild
+2. **Icon Generation**: Converts iconset to .icns format if available
+3. **App Bundle Creation**: Builds .app bundle with PyInstaller
+4. **Universal Binary**: Combines ARM64 and Intel builds (if --universal)
+5. **DMG Creation**: Packages app in professional disk image
+6. **Installation Instructions**: Generates detailed user guide
+
+### Output Files
+
+```
+dist/
+├── Pandoc UI.app                    # macOS app bundle
+├── pandoc-ui-macos.dmg             # Disk image for distribution
+└── INSTALL_MACOS.md                # User installation instructions
+```
+
+### DMG Features
+
+- **Professional Layout**: Drag-to-Applications interface
+- **Universal Binary**: Single app works on all Mac architectures
+- **Background Image**: Custom DMG background (configurable)
+- **Volume Branding**: Proper volume name and icon
+- **File Associations**: Supports .md, .rst, .tex files
+- **High DPI Support**: Optimized for Retina displays
+
+### User Installation Process
+
+1. **Download**: User downloads `pandoc-ui-macos.dmg`
+2. **Mount**: Double-click to mount the disk image
+3. **Install**: Drag app to Applications folder
+4. **First Launch**: Right-click app → "Open" to bypass Gatekeeper
+5. **Future Use**: App launches normally after first approval
+
+### Unsigned App Distribution
+
+Since this method doesn't require code signing, users will see a security warning on first launch. The generated `INSTALL_MACOS.md` provides three methods for users to safely launch the app:
+
+#### Method 1: Right-click Override (Easiest)
+```
+1. Right-click "Pandoc UI.app" in Applications
+2. Select "Open" from context menu
+3. Click "Open" in security dialog
+```
+
+#### Method 2: Terminal Command (Advanced)
+```bash
+sudo xattr -rd com.apple.quarantine "/Applications/Pandoc UI.app"
+```
+
+#### Method 3: System Preferences (Alternative)
+```
+1. Try to open app (it will be blocked)
+2. System Preferences → Security & Privacy → General
+3. Click "Open Anyway"
+```
+
+### Technical Specifications
+
+- **Build Tool**: PyInstaller 6.0+ (better macOS support than Nuitka)
+- **Target OS**: macOS 10.15+ (Catalina and later)
+- **Architectures**: Universal2 (ARM64 + x86_64)
+- **Bundle Format**: Standard .app bundle with proper metadata
+- **DMG Compression**: UDZO (compressed) for smaller download size
+- **Dependencies**: Self-contained (includes PySide6 and all requirements)
+
+### Customization
+
+#### DMG Appearance
+Edit `scripts/macos/dmg_settings.py` to customize:
+- Window size and position
+- Icon locations
+- Background image
+- Volume settings
+
+#### App Metadata
+Edit `scripts/macos/pandoc-ui.spec` to customize:
+- Bundle identifier
+- Version information
+- File associations
+- Copyright information
+
+#### Background Image
+Create `scripts/macos/background.png` (640x400px) for custom DMG background.
+
+### Troubleshooting
+
+#### Build Issues
+- **PyInstaller not found**: Run `uv sync --group macos`
+- **Icon missing**: Ensure `resources/icons/app.iconset/` exists
+- **Permission denied**: Make sure script is executable (`chmod +x`)
+
+#### Runtime Issues
+- **App won't open**: User needs to follow first-launch security steps
+- **Missing dependencies**: DMG includes all dependencies
+- **Performance slow**: First launch is slower due to macOS verification
+
+### Distribution Strategy
+
+1. **GitHub Releases**: Upload DMG file to releases page
+2. **Download Instructions**: Link to `INSTALL_MACOS.md` for user guidance
+3. **Homebrew Cask**: Consider submitting to homebrew-cask for easier installation
+4. **Website**: Provide direct download link with installation instructions
+
+### Comparison with Signed Distribution
+
+| Feature | Unsigned DMG | Signed Distribution |
+|---------|--------------|-------------------|
+| **Cost** | Free | $99/year Developer account |
+| **User Experience** | Manual security override | Seamless installation |
+| **Distribution** | Direct download | App Store or direct |
+| **Build Complexity** | Simple | Requires certificates |
+| **Open Source** | Perfect fit | Unnecessary complexity |
+
+For open source projects, unsigned DMG distribution is the recommended approach.
 
 ## Advanced Build Features
 

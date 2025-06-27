@@ -1,5 +1,103 @@
 # Claude Development Log
 
+## 2025-06-27-16:45 - macOS DMG Distribution Implementation
+
+### Task
+Implement unsigned macOS DMG distribution system for open source projects without requiring Apple Developer account. Create universal binary support for both Apple Silicon and Intel Macs using PyInstaller and dmgbuild.
+
+### Implementation
+
+#### 🍎 macOS DMG Build System
+- **Created `scripts/macos_build_dmg.sh`**: Main build script with PyInstaller integration
+  - Universal binary support (`--target-arch=universal2`)
+  - Automatic dependency installation (PyInstaller, dmgbuild)
+  - Icon generation from iconset to .icns format
+  - Professional DMG creation with drag-to-install interface
+  - Comprehensive error handling and verification
+
+- **Created `scripts/macos/dmg_settings.py`**: DMG configuration using dmgbuild
+  - Custom window layout and icon positioning
+  - Applications symlink for easy installation
+  - Background image support (640x400px)
+  - Volume branding and compression settings
+
+- **Created `scripts/macos/pandoc-ui.spec`**: Advanced PyInstaller specification
+  - Universal binary configuration
+  - Proper app bundle metadata (Info.plist)
+  - File associations for .md, .rst, .tex files
+  - Hidden imports optimization for PySide6
+  - macOS-specific bundle structure
+
+#### 📦 Open Source Distribution Strategy
+- **Unsigned Distribution**: No Apple Developer account required ($0 vs $99/year)
+- **Gatekeeper Bypass Instructions**: Three methods for users to safely launch app
+  - Right-click override (recommended)
+  - Terminal xattr command
+  - System Preferences security panel
+- **Professional User Experience**: Detailed installation guide generation
+
+#### 🔧 Build Configuration Updates
+- **Updated `pyproject.toml`**: Added macOS dependency group
+  - PyInstaller 6.0+ for superior macOS support
+  - dmgbuild for professional DMG creation
+  - Platform-specific installation (`sys_platform == 'darwin'`)
+
+- **Enhanced `README.md`**: Added macOS build instructions
+  - Quick start commands for DMG creation
+  - Universal binary build examples
+  - Open source distribution emphasis
+
+- **Comprehensive `BUILD.md`**: Complete macOS DMG guide
+  - Technical specifications and architecture details
+  - Step-by-step build process explanation
+  - User installation workflow
+  - Troubleshooting guide
+  - Comparison with signed distribution
+
+### Files Created
+- `scripts/macos_build_dmg.sh` - Main macOS build script (executable)
+- `scripts/macos/dmg_settings.py` - DMG creation configuration
+- `scripts/macos/pandoc-ui.spec` - PyInstaller specification file
+- `scripts/macos/README_BACKGROUND.md` - DMG background creation guide
+
+### Files Modified
+- `pyproject.toml` - Added macOS dependency group
+- `README.md` - Added macOS build instructions
+- `BUILD.md` - Added comprehensive macOS DMG build guide
+
+### Technical Decisions
+
+#### PyInstaller vs Nuitka for macOS
+- **Chose PyInstaller**: Better macOS universal binary support in 2025
+- **Universal2 Target**: Single binary for both Apple Silicon and Intel
+- **DMG Distribution**: Professional appearance without code signing complexity
+- **Open Source Optimized**: Perfect fit for MIT licensed projects
+
+#### Unsigned Distribution Strategy
+- **Cost-Effective**: $0 vs $99/year Apple Developer Program
+- **User-Friendly**: Clear instructions for security override
+- **Industry Standard**: Common approach for open source macOS apps
+- **Professional Appearance**: DMG with proper layout and branding
+
+### Architecture Benefits
+- **Universal Binary**: Single download works on all Mac architectures
+- **Self-Contained**: Includes all Python and PySide6 dependencies
+- **Professional Packaging**: Drag-to-Applications DMG interface
+- **Easy Distribution**: GitHub releases compatible
+- **Future-Proof**: Supports latest macOS versions and architectures
+
+### Next Steps
+- Test universal binary on both Apple Silicon and Intel Macs
+- Consider Homebrew Cask submission for easier installation
+- Add GitHub Actions workflow for automated macOS builds
+- Create custom DMG background image for branding
+
+### Research Foundation
+- Analyzed 2025 macOS packaging landscape
+- Evaluated Nuitka vs PyInstaller for universal binaries
+- Studied unsigned distribution best practices
+- Reviewed open source macOS app distribution strategies
+
 ## 2025-06-26-13:30 - Complete Build Optimization System Implementation
 
 ### Task

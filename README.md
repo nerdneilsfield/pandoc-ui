@@ -31,12 +31,22 @@ uv sync
 uv run python -m pandoc_ui.main
 
 # Or build standalone executable
-./scripts/build.sh
+./scripts/build.sh              # Linux/Windows
+./scripts/macos_build_dmg.sh    # macOS (creates DMG)
 ```
 
 ## Build Instructions
 
 See [BUILD.md](BUILD.md) for detailed build instructions and platform-specific requirements.
+
+### macOS DMG Distribution
+```bash
+# Build unsigned universal binary DMG for open source distribution
+./scripts/macos_build_dmg.sh --universal
+
+# Users install by dragging app to Applications folder
+# No Apple Developer account required!
+```
 
 ## Development
 
