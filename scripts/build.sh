@@ -200,8 +200,9 @@ elif [ "$PLATFORM" = "macos" ]; then
     
     # Configure architecture
     if [ "$UNIVERSAL_BINARY" = true ]; then
-        echo "🌍 Building universal binary (Apple Silicon + Intel)"
-        PLATFORM_ARGS="--macos-target-arch=universal"
+        echo "🌍 Universal binary requested - will build separate binaries and combine with lipo"
+        # We'll handle this in the build function
+        PLATFORM_ARGS="--macos-target-arch=$ARCH"
     else
         echo "🔧 Building for current architecture: $ARCH"
         PLATFORM_ARGS="--macos-target-arch=$ARCH"
@@ -297,8 +298,73 @@ if [ ! -z "$ICON_ARG" ]; then
     NUITKA_ARGS+=($ICON_ARG)
 fi
 
-# Add entry point
-uv run python -m nuitka "${NUITKA_ARGS[@]}" pandoc_ui/main.py
+# Build strategy based on universal binary requirement
+if [[ "$PLATFORM" = "macos" && "$UNIVERSAL_BINARY" = true ]]; then
+    echo "🌍 Building universal binary using dual-arch approach..."
+    
+    # Build for ARM64 (Apple Silicon)
+    echo "🔨 Building ARM64 binary..."
+    ARM64_ARGS=("${NUITKA_ARGS[@]}")
+    # Remove existing target arch and add ARM64
+    ARM64_ARGS=($(printf '%s\n' "${ARM64_ARGS[@]}" | grep -v -- '--macos-target-arch'))
+    ARM64_ARGS+=(--macos-target-arch=arm64)
+    ARM64_ARGS+=(--output-filename="$OUTPUT_FILE-arm64")
+    
+    uv run python -m nuitka "${ARM64_ARGS[@]}" pandoc_ui/main.py
+    ARM64_BUILD_SUCCESS=$?
+    
+    # Build for x86_64 (Intel)
+    echo "🔨 Building x86_64 binary..."
+    X86_ARGS=("${NUITKA_ARGS[@]}")
+    # Remove existing target arch and add x86_64
+    X86_ARGS=($(printf '%s\n' "${X86_ARGS[@]}" | grep -v -- '--macos-target-arch'))
+    X86_ARGS+=(--macos-target-arch=x86_64)
+    X86_ARGS+=(--output-filename="$OUTPUT_FILE-x86_64")
+    
+    uv run python -m nuitka "${X86_ARGS[@]}" pandoc_ui/main.py
+    X86_BUILD_SUCCESS=$?
+    
+    # Check if both builds succeeded
+    if [[ $ARM64_BUILD_SUCCESS -eq 0 && $X86_BUILD_SUCCESS -eq 0 ]]; then
+        echo "🔗 Combining binaries with lipo..."
+        
+        ARM64_BINARY="$DIST_DIR/$OUTPUT_FILE-arm64"
+        X86_BINARY="$DIST_DIR/$OUTPUT_FILE-x86_64"
+        UNIVERSAL_BINARY="$DIST_DIR/$OUTPUT_FILE"
+        
+        if [[ -f "$ARM64_BINARY" && -f "$X86_BINARY" ]]; then
+            lipo -create -output "$UNIVERSAL_BINARY" "$ARM64_BINARY" "$X86_BINARY"
+            
+            if [[ $? -eq 0 ]]; then
+                echo "✅ Universal binary created successfully!"
+                
+                # Verify the universal binary
+                echo "🔍 Verifying universal binary:"
+                lipo -info "$UNIVERSAL_BINARY"
+                
+                # Clean up individual architecture binaries
+                rm -f "$ARM64_BINARY" "$X86_BINARY"
+            else
+                echo "❌ Failed to create universal binary with lipo"
+                echo "💡 Individual binaries are available:"
+                echo "   - ARM64: $ARM64_BINARY"
+                echo "   - x86_64: $X86_BINARY"
+            fi
+        else
+            echo "❌ One or both architecture binaries not found"
+            echo "   - ARM64: $ARM64_BINARY ($([ -f "$ARM64_BINARY" ] && echo "exists" || echo "missing"))"
+            echo "   - x86_64: $X86_BINARY ($([ -f "$X86_BINARY" ] && echo "exists" || echo "missing"))"
+        fi
+    else
+        echo "❌ One or both architecture builds failed"
+        echo "   - ARM64 build: $([ $ARM64_BUILD_SUCCESS -eq 0 ] && echo "success" || echo "failed")"
+        echo "   - x86_64 build: $([ $X86_BUILD_SUCCESS -eq 0 ] && echo "success" || echo "failed")"
+    fi
+else
+    # Standard single-architecture build
+    echo "🔨 Building for single architecture..."
+    uv run python -m nuitka "${NUITKA_ARGS[@]}" pandoc_ui/main.py
+fi
 
 # Check if build was successful
 BUILD_SUCCESS=false
