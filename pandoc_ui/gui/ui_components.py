@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QRadioButton,
     QSpinBox,
+    QSplitter,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -233,49 +234,50 @@ class MainWindowUI(QObject):
         input_path_layout.addWidget(QLabel("Input:"))
         self.inputPathEdit = QLineEdit()
         self.inputPathEdit.setPlaceholderText("Select input file or folder...")
-        self.browseInputButton = QPushButton("Browse...")
+        self.browseInputButton = QPushButton(_("Browse"))
+        self.browseInputButton.setMinimumSize(60, 0)
         input_path_layout.addWidget(self.inputPathEdit)
         input_path_layout.addWidget(self.browseInputButton)
         input_layout.addLayout(input_path_layout)
 
-        main_layout.addWidget(input_group)
+        # Create horizontal splitter for Input and Output sections
+        input_output_splitter = QSplitter()
+        input_output_splitter.setOrientation(input_output_splitter.Orientation.Horizontal)
+        input_output_splitter.setChildrenCollapsible(False)
+        
+        # Add input group to splitter
+        input_output_splitter.addWidget(input_group)
 
         # Output Selection Group
-        output_group = QGroupBox("Output Configuration")
+        output_group = QGroupBox("Output Settings")
         output_layout = QVBoxLayout(output_group)
+
+        # Output format selection
+        output_format_layout = QHBoxLayout()
+        output_format_layout.addWidget(QLabel("Output Format:"))
+        self.formatComboBox = QComboBox()
+        for fmt in OutputFormat:
+            self.formatComboBox.addItem(fmt.value.upper(), fmt)
+        output_format_layout.addWidget(self.formatComboBox)
+        output_format_layout.addStretch()
+        output_layout.addLayout(output_format_layout)
 
         # Output directory
         output_dir_layout = QHBoxLayout()
         output_dir_layout.addWidget(QLabel("Output Directory:"))
         self.outputDirEdit = QLineEdit()
-        self.outputDirEdit.setPlaceholderText("Select output directory...")
-        self.browseOutputButton = QPushButton("Browse...")
+        self.outputDirEdit.setPlaceholderText("Output directory (leave empty for same as input)")
+        self.browseOutputButton = QPushButton(_("Browse"))
+        self.browseOutputButton.setMinimumSize(60, 0)
         output_dir_layout.addWidget(self.outputDirEdit)
         output_dir_layout.addWidget(self.browseOutputButton)
         output_layout.addLayout(output_dir_layout)
 
-        # Input format selection
-        input_format_layout = QHBoxLayout()
-        input_format_layout.addWidget(QLabel("Input Format:"))
-        self.inputFormatComboBox = QComboBox()
-        self.inputFormatComboBox.addItem("Auto-detect", None)  # Auto-detect as default
-        for fmt in InputFormat:
-            self.inputFormatComboBox.addItem(fmt.value.upper(), fmt)
-        input_format_layout.addWidget(self.inputFormatComboBox)
-        input_format_layout.addStretch()
-        output_layout.addLayout(input_format_layout)
-
-        # Output format selection
-        output_format_layout = QHBoxLayout()
-        output_format_layout.addWidget(QLabel("Output Format:"))
-        self.outputFormatComboBox = QComboBox()
-        for fmt in OutputFormat:
-            self.outputFormatComboBox.addItem(fmt.value.upper(), fmt)
-        output_format_layout.addWidget(self.outputFormatComboBox)
-        output_format_layout.addStretch()
-        output_layout.addLayout(output_format_layout)
-
-        main_layout.addWidget(output_group)
+        # Add output group to splitter
+        input_output_splitter.addWidget(output_group)
+        
+        # Add splitter to main layout
+        main_layout.addWidget(input_output_splitter)
 
         # Batch Options Group (initially hidden)
         self.batchOptionsGroupBox = QGroupBox("Batch Options")
@@ -423,9 +425,9 @@ class MainWindowUI(QObject):
 
         # Basic controls
         self.inputPathEdit = QLineEdit()
-        self.browseInputButton = QPushButton("Browse Input")
+        self.browseInputButton = QPushButton(_("Browse Input"))
         self.outputDirEdit = QLineEdit()
-        self.browseOutputButton = QPushButton("Browse Output")
+        self.browseOutputButton = QPushButton(_("Browse Output"))
         self.convertButton = QPushButton("Convert")
         self.statusLabel = QLabel("Ready")
         self.progressBar = QProgressBar()
@@ -1767,9 +1769,9 @@ The application will not work without Pandoc.""",
             
             # Update buttons
             if hasattr(self.ui, "browseInputButton"):
-                self.ui.browseInputButton.setText(_("Select input file or folder to convert..."))
+                self.ui.browseInputButton.setText(_("Browse"))
             if hasattr(self.ui, "browseOutputButton"):
-                self.ui.browseOutputButton.setText(_("Select input file or folder to convert..."))
+                self.ui.browseOutputButton.setText(_("Browse"))
             if hasattr(self.ui, "convertButton"):
                 self.ui.convertButton.setText(_("Start Conversion"))
             if hasattr(self.ui, "clearLogButton"):

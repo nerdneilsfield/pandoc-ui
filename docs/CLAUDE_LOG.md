@@ -1,5 +1,63 @@
 # Claude Development Log
 
+## 2025-06-27-19:32 - UI Layout Optimization for Compact Displays
+
+### Task
+Reorganize UI layout to be more compact and suitable for lower resolution displays like MacBook Air. Implement horizontal layout for Input/Output sections, shorten button text, and add collapsible log section.
+
+### Implementation
+
+#### 🎨 Layout Reorganization
+- **Modified `main_window.ui`**: Converted vertical Input/Output stack to horizontal splitter
+  - Created `QSplitter` with horizontal orientation for Input and Output sections
+  - Set `childrenCollapsible=false` to prevent sections from being hidden
+  - Input Selection and Output Settings now side-by-side instead of stacked vertically
+
+#### ⚡ UI Improvements
+- **Shortened button text**: Changed "Browse..." to "浏览" (Browse in Chinese)
+  - Reduced button minimum width from 100px to 60px
+  - Updated both `.ui` file and programmatic UI in `ui_components.py`
+  - Updated translation system calls to use `_("Browse")` for i18n support
+
+- **Collapsible Log Section**: Made log area foldable to save vertical space
+  - Added `checkable=true` and `checked=false` properties to logGroupBox
+  - Log section now starts collapsed by default
+  - Users can click checkbox to expand/collapse log area
+
+#### 🔧 Technical Updates
+- **Updated `ui_components.py`**: Modified programmatic UI to match new layout
+  - Added `QSplitter` import
+  - Created horizontal splitter for Input/Output in fallback UI
+  - Adjusted button sizing and text for consistency
+
+### Files Modified
+- `pandoc_ui/gui/main_window.ui`: Layout reorganization, button text, collapsible log
+- `pandoc_ui/gui/ui_components.py`: Programmatic UI updates, translation calls
+
+### UI Benefits
+- **Space Efficient**: Horizontal layout better utilizes wide screen space
+- **Compact Design**: Shorter buttons and collapsible log reduce vertical height
+- **Responsive**: Splitter allows user to resize Input/Output sections as needed
+- **User Control**: Log section can be hidden when not needed
+
+#### 🌍 Translation Fix
+- **Fixed Browse button translation**: Corrected hardcoded Chinese text
+  - Changed UI file from hardcoded "浏览" back to "Browse" 
+  - Updated programmatic UI to use `_("Browse")` translation function
+  - Ensures proper internationalization support for all languages
+
+### Testing Results
+- ✅ UI loads correctly with new horizontal layout
+- ✅ Input/Output sections are properly side-by-side
+- ✅ Browse buttons are shorter and properly translated
+- ✅ Log section can be collapsed/expanded successfully
+- ✅ All functionality preserved from original vertical layout
+
+### Next Steps
+- Test on various screen resolutions to ensure optimal display
+- Consider additional collapsible sections for advanced options
+- Implement splitter size persistence across sessions
+
 ## 2025-06-27-16:45 - macOS DMG Distribution Implementation
 
 ### Task

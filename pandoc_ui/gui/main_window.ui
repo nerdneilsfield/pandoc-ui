@@ -35,118 +35,125 @@
      <number>20</number>
     </property>
     <item>
-     <widget class="QGroupBox" name="inputGroupBox">
-      <property name="title">
-       <string>Input Selection</string>
+     <widget class="QSplitter" name="inputOutputSplitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
       </property>
-      <layout class="QVBoxLayout" name="inputMainLayout">
-       <item>
-        <layout class="QHBoxLayout" name="modeLayout">
-         <item>
-          <widget class="QRadioButton" name="singleFileModeRadio">
-           <property name="text">
-            <string>Single File</string>
-           </property>
-           <property name="checked">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="folderModeRadio">
-           <property name="text">
-            <string>Folder (Batch)</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="modeSpacer">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="inputLayout">
-         <item>
-          <widget class="QLineEdit" name="inputPathEdit">
-           <property name="placeholderText">
-            <string>Select input file or folder to convert...</string>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="browseInputButton">
-           <property name="text">
-            <string>Browse...</string>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>100</width>
-             <height>0</height>
-            </size>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="batchOptionsGroupBox">
-         <property name="title">
-          <string>Batch Options</string>
-         </property>
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <layout class="QGridLayout" name="batchOptionsLayout">
-          <item row="0" column="0">
-           <widget class="QLabel" name="extensionFilterLabel">
+      <property name="childrenCollapsible">
+       <bool>false</bool>
+      </property>
+      <widget class="QGroupBox" name="inputGroupBox">
+       <property name="title">
+        <string>Input Selection</string>
+       </property>
+       <layout class="QVBoxLayout" name="inputMainLayout">
+        <item>
+         <layout class="QHBoxLayout" name="modeLayout">
+          <item>
+           <widget class="QRadioButton" name="singleFileModeRadio">
             <property name="text">
-             <string>File Extensions:</string>
+             <string>Single File</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="extensionFilterEdit">
+          <item>
+           <widget class="QRadioButton" name="folderModeRadio">
+            <property name="text">
+             <string>Folder (Batch)</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="modeSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="inputLayout">
+          <item>
+           <widget class="QLineEdit" name="inputPathEdit">
             <property name="placeholderText">
-             <string>.md,.rst,.txt (leave empty for auto-detect)</string>
+             <string>Select input file or folder to convert...</string>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="scanModeLabel">
+          <item>
+           <widget class="QPushButton" name="browseInputButton">
             <property name="text">
-             <string>Scan Mode:</string>
+             <string>Browse</string>
             </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QComboBox" name="scanModeComboBox">
             <property name="minimumSize">
              <size>
-              <width>150</width>
+              <width>60</width>
               <height>0</height>
              </size>
             </property>
-            <item>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="batchOptionsGroupBox">
+          <property name="title">
+           <string>Batch Options</string>
+          </property>
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <layout class="QGridLayout" name="batchOptionsLayout">
+           <item row="0" column="0">
+            <widget class="QLabel" name="extensionFilterLabel">
              <property name="text">
-              <string>Recursive (All Subfolders)</string>
+              <string>File Extensions:</string>
              </property>
-            </item>
-            <item>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="extensionFilterEdit">
+             <property name="placeholderText">
+              <string>.md,.rst,.txt (leave empty for auto-detect)</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="scanModeLabel">
              <property name="text">
-              <string>Single Level Only</string>
+              <string>Scan Mode:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="scanModeComboBox">
+             <property name="minimumSize">
+              <size>
+               <width>150</width>
+               <height>0</height>
+              </size>
+             </property>
+             <item>
+              <property name="text">
+               <string>Recursive (All Subfolders)</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Single Level Only</string>
              </property>
             </item>
            </widget>
@@ -176,8 +183,6 @@
        </item>
       </layout>
      </widget>
-    </item>
-    <item>
      <widget class="QGroupBox" name="outputGroupBox">
       <property name="title">
        <string>Output Settings</string>
@@ -232,11 +237,11 @@
          <item>
           <widget class="QPushButton" name="browseOutputButton">
            <property name="text">
-            <string>Browse...</string>
+            <string>Browse</string>
            </property>
            <property name="minimumSize">
             <size>
-             <width>100</width>
+             <width>60</width>
              <height>0</height>
             </size>
            </property>
@@ -246,7 +251,8 @@
        </item>
       </layout>
      </widget>
-    </item>
+    </widget>
+   </item>
     <item>
      <widget class="QGroupBox" name="commandPreviewGroupBox">
       <property name="title">
@@ -432,6 +438,12 @@
      <widget class="QGroupBox" name="logGroupBox">
       <property name="title">
        <string>Log Output</string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
+      </property>
+      <property name="checked">
+       <bool>false</bool>
       </property>
       <layout class="QVBoxLayout" name="logLayout">
        <item>
