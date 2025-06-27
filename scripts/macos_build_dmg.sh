@@ -218,11 +218,20 @@ build_app_cmdline() {
         BUILD_ARGS+=(--icon=resources/icons/app.icns)
     fi
     
-    # Add data files
-    BUILD_ARGS+=(
-        --add-data="resources:resources"
-        --add-data="pandoc_ui/locales:pandoc_ui/locales"
-    )
+    # Add data files (only if they exist)
+    if [[ -d "resources" ]]; then
+        BUILD_ARGS+=(--add-data="resources:resources")
+        log_info "Including resources directory"
+    else
+        log_warning "Resources directory not found, skipping"
+    fi
+    
+    if [[ -d "pandoc_ui/locales" ]]; then
+        BUILD_ARGS+=(--add-data="pandoc_ui/locales:pandoc_ui/locales")
+        log_info "Including locales directory"
+    else
+        log_warning "Locales directory not found, skipping"
+    fi
     
     # Add hidden imports for PySide6
     BUILD_ARGS+=(
