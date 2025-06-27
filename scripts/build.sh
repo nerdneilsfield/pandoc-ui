@@ -12,6 +12,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OPTIMIZE_BINARY=true
 STRIP_LEVEL="conservative"
 BUILD_APPIMAGE=false
+BUILD_DMG=false
+UNIVERSAL_BINARY=false
 BUILD_MODE="onefile"  # Default to onefile, standalone for packaging
 HELP=false
 
@@ -27,6 +29,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --appimage)
             BUILD_APPIMAGE=true
+            shift
+            ;;
+        --dmg)
+            BUILD_DMG=true
+            shift
+            ;;
+        --universal)
+            UNIVERSAL_BINARY=true
             shift
             ;;
         --standalone)
@@ -57,6 +67,8 @@ OPTIONS:
     --strip-level LEVEL     Set strip optimization level (conservative, moderate, aggressive)
                            Default: conservative
     --appimage              Build AppImage after creating binary (Linux only)
+    --dmg                   Create DMG package after building (macOS only)
+    --universal             Build universal binary for Apple Silicon + Intel (macOS only)
     --standalone            Use standalone mode instead of onefile (recommended for packaging)
     --help, -h              Show this help message
 
@@ -69,12 +81,15 @@ EXAMPLES:
     $0                                    # Build with conservative optimization
     $0 --no-strip                        # Build without optimization
     $0 --strip-level moderate           # Build with moderate optimization
-    $0 --appimage                        # Build binary and create AppImage
+    $0 --appimage                        # Build binary and create AppImage (Linux)
+    $0 --dmg --universal                 # Build universal DMG package (macOS)
     $0 --appimage --strip-level moderate # Build optimized AppImage
 
 NOTES:
     - AppImage creation requires Linux and downloads required tools automatically
     - AppImage includes all dependencies and runs on most Linux distributions
+    - DMG creation requires macOS and creates unsigned app bundles
+    - Universal binaries support both Apple Silicon and Intel Macs
     - Use --appimage for distribution-ready Linux packages
 
 EOF
@@ -183,7 +198,14 @@ elif [ "$PLATFORM" = "macos" ]; then
     # Set deployment target for compatibility
     export MACOSX_DEPLOYMENT_TARGET="10.14"  # Support macOS Mojave and later
     
-    PLATFORM_ARGS="--macos-target-arch=$ARCH"
+    # Configure architecture
+    if [ "$UNIVERSAL_BINARY" = true ]; then
+        echo "🌍 Building universal binary (Apple Silicon + Intel)"
+        PLATFORM_ARGS="--macos-target-arch=universal"
+    else
+        echo "🔧 Building for current architecture: $ARCH"
+        PLATFORM_ARGS="--macos-target-arch=$ARCH"
+    fi
     
     # Look for icon file
     ICON_ARG=""
@@ -232,6 +254,16 @@ NUITKA_ARGS=(
     --show-memory
     --include-data-file=pandoc_ui/gui/main_window.ui=pandoc_ui/gui/main_window.ui
     --include-data-dir=pandoc_ui/resources=pandoc_ui/resources
+    --nofollow-import-to=mypy
+    --nofollow-import-to=pytest
+    --nofollow-import-to=black
+    --nofollow-import-to=ruff
+    --nofollow-import-to=isort
+    --nofollow-import-to=coverage
+    --nofollow-import-to=setuptools
+    --nofollow-import-to=pip
+    --nofollow-import-to=wheel
+    --nofollow-import-to=distutils
 )
 
 # Add optimization flags based on strip level (Nuitka build-time optimization)
@@ -536,6 +568,229 @@ if [ "$BUILD_SUCCESS" = true ]; then
             echo "💡 AppImage creation skipped"
         fi
     fi
+    
+    # DMG creation (macOS only)
+    if [[ "$BUILD_DMG" = true ]]; then
+        if [[ "$PLATFORM" = "macos" ]]; then
+            echo ""
+            echo "📦 Creating DMG package..."
+            
+            # Check if dmgbuild is available
+            if ! uv pip list | grep -q dmgbuild; then
+                echo "📥 Installing dmgbuild..."
+                uv add --dev dmgbuild
+            fi
+            
+            # Create DMG configuration
+            DMG_SETTINGS_FILE="$SCRIPT_DIR/macos/dmg_settings.py"
+            if [[ ! -f "$DMG_SETTINGS_FILE" ]]; then
+                echo "⚠️  DMG settings file not found: $DMG_SETTINGS_FILE"
+                echo "💡 Creating basic DMG configuration..."
+                
+                mkdir -p "$SCRIPT_DIR/macos"
+                cat > "$DMG_SETTINGS_FILE" << 'EOF'
+# DMG build settings for pandoc-ui
+import os
+
+# Get the directory containing this file
+_settings_dir = os.path.dirname(os.path.abspath(__file__))
+_project_root = os.path.dirname(os.path.dirname(_settings_dir))
+
+# Application info
+app_name = "Pandoc UI"
+app_bundle = f"{app_name}.app"
+
+# Files to include in DMG
+files = [os.path.join(_project_root, "dist", app_bundle)]
+
+# Create Applications symlink for easy installation
+symlinks = {
+    'Applications': '/Applications'
+}
+
+# Volume settings
+volume_name = app_name
+badge_icon = os.path.join(_project_root, "resources", "icons", "app.icns")
+
+# Window appearance
+show_status_bar = False
+show_tab_view = False
+show_toolbar = False
+show_pathbar = False
+show_sidebar = False
+
+# Window geometry: ((x, y), (width, height))
+window_rect = ((100, 100), (640, 400))
+
+# Icon positions: {filename: (x, y)}
+icon_locations = {
+    app_bundle: (160, 200),
+    'Applications': (480, 200)
+}
+
+# Icon view settings
+default_view = 'icon-view'
+icon_size = 128
+text_size = 16
+
+# Format
+format = 'UDZO'  # Compressed
+compression_level = 9
+EOF
+            fi
+            
+            # Determine app bundle name and path
+            if [[ "$BUILD_MODE" = "onefile" ]]; then
+                # For onefile, we need to create an app bundle structure
+                APP_BUNDLE_NAME="Pandoc UI.app"
+                APP_BUNDLE_PATH="$DIST_DIR/$APP_BUNDLE_NAME"
+                
+                if [[ ! -d "$APP_BUNDLE_PATH" ]]; then
+                    echo "📁 Creating app bundle structure for onefile binary..."
+                    mkdir -p "$APP_BUNDLE_PATH/Contents/MacOS"
+                    mkdir -p "$APP_BUNDLE_PATH/Contents/Resources"
+                    
+                    # Copy the binary
+                    cp "$DIST_DIR/$OUTPUT_FILE" "$APP_BUNDLE_PATH/Contents/MacOS/pandoc-ui"
+                    chmod +x "$APP_BUNDLE_PATH/Contents/MacOS/pandoc-ui"
+                    
+                    # Copy icon if available
+                    if [[ -f "resources/icons/app.icns" ]]; then
+                        cp "resources/icons/app.icns" "$APP_BUNDLE_PATH/Contents/Resources/"
+                    fi
+                    
+                    # Create Info.plist
+                    cat > "$APP_BUNDLE_PATH/Contents/Info.plist" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Pandoc UI</string>
+    <key>CFBundleDisplayName</key>
+    <string>Pandoc UI</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.pandoc-ui.app</string>
+    <key>CFBundleVersion</key>
+    <string>$VERSION</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$VERSION</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleExecutable</key>
+    <string>pandoc-ui</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>app.icns</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>LSMinimumSystemVersion</key>
+    <string>$MACOSX_DEPLOYMENT_TARGET</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2025 pandoc-ui. MIT License.</string>
+</dict>
+</plist>
+EOF
+                fi
+            else
+                # For standalone mode, Nuitka should create the app bundle
+                APP_BUNDLE_NAME="Pandoc UI.app"
+                APP_BUNDLE_PATH="$DIST_DIR/$APP_BUNDLE_NAME"
+            fi
+            
+            # Create DMG
+            DMG_NAME="pandoc-ui-macos-$VERSION"
+            if [[ "$UNIVERSAL_BINARY" = true ]]; then
+                DMG_NAME="pandoc-ui-macos-universal-$VERSION"
+            fi
+            DMG_PATH="$DIST_DIR/$DMG_NAME.dmg"
+            
+            echo "🔨 Building DMG: $DMG_NAME.dmg"
+            
+            # Remove existing DMG
+            rm -f "$DMG_PATH"
+            
+            # Create DMG using dmgbuild
+            uv run dmgbuild -s "$DMG_SETTINGS_FILE" "Pandoc UI" "$DMG_PATH"
+            
+            if [[ $? -eq 0 && -f "$DMG_PATH" ]]; then
+                DMG_SIZE=$(du -h "$DMG_PATH" | cut -f1)
+                echo ""
+                echo "✅ DMG created successfully!"
+                echo "📁 DMG: $DMG_PATH"
+                echo "📊 DMG size: $DMG_SIZE"
+                
+                # Create installation instructions
+                INSTALL_GUIDE="$DIST_DIR/INSTALL_MACOS.md"
+                cat > "$INSTALL_GUIDE" << 'INSTALL_EOF'
+# macOS Installation Instructions
+
+## Installing Pandoc UI
+
+1. **Download**: Download the DMG file
+2. **Mount**: Double-click the DMG file to mount it
+3. **Install**: Drag "Pandoc UI.app" to the Applications folder
+4. **Eject**: Eject the DMG from Finder
+
+## First Launch (Important!)
+
+Since this app is unsigned, macOS will prevent it from opening initially. Follow these steps:
+
+### Method 1: Right-click Override (Recommended)
+1. Right-click on "Pandoc UI.app" in Applications
+2. Select "Open" from the context menu
+3. Click "Open" in the security dialog
+4. The app will now open and be whitelisted for future launches
+
+### Method 2: Terminal Command (Advanced)
+```bash
+sudo xattr -rd com.apple.quarantine "/Applications/Pandoc UI.app"
+```
+
+### Method 3: System Preferences (Alternative)
+1. Try to open the app normally (it will be blocked)
+2. Go to System Preferences → Security & Privacy → General
+3. Click "Open Anyway" next to the blocked app message
+4. Confirm by clicking "Open"
+
+## System Requirements
+
+- macOS 10.14 (Mojave) or later
+- Pandoc installed (the app will guide you if not installed)
+
+## Support
+
+For issues, please visit the project repository.
+INSTALL_EOF
+                
+                echo ""
+                echo "💡 DMG distribution:"
+                echo "   - Upload DMG to GitHub Releases or distribution platform"
+                echo "   - Users drag app to Applications folder"
+                echo "   - First launch requires security override (see INSTALL_MACOS.md)"
+                echo "   - No Apple Developer account required"
+                echo ""
+                echo "📖 Installation guide: $INSTALL_GUIDE"
+                
+                if [[ "$UNIVERSAL_BINARY" = true ]]; then
+                    echo ""
+                    echo "🌍 Universal Binary Info:"
+                    echo "   - Supports both Apple Silicon and Intel Macs"
+                    echo "   - Single download works on all architectures"
+                fi
+            else
+                echo "⚠️  DMG creation failed, but main build succeeded"
+                echo "💡 You can still distribute the app bundle: $APP_BUNDLE_PATH"
+            fi
+        else
+            echo ""
+            echo "⚠️  DMG creation is only supported on macOS"
+            echo "💡 Current platform: $PLATFORM"
+            echo "💡 DMG creation skipped"
+        fi
+    fi
+    
     
 else
     echo "❌ Build failed! Output file not found."
