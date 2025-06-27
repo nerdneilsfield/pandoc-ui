@@ -730,8 +730,13 @@ _dist_dir = os.path.join(_project_root, "dist")
 app_name = "Pandoc UI"
 app_bundle = f"{app_name}.app"
 
-# Files to include in DMG
-files = [os.path.join(_dist_dir, app_bundle)]
+# Files to include in DMG - check both dist/ and dist/macos/ locations
+app_bundle_path = os.path.join(_dist_dir, app_bundle)
+if not os.path.exists(app_bundle_path):
+    # Try the macos subdirectory
+    app_bundle_path = os.path.join(_dist_dir, "macos", app_bundle)
+
+files = [app_bundle_path]
 
 # Create Applications symlink for easy installation
 symlinks = {
